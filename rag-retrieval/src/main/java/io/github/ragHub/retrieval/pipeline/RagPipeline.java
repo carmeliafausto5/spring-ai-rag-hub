@@ -6,6 +6,7 @@ import io.github.ragHub.core.port.RagQueryPort;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.vectorstore.QuestionAnswerAdvisor;
 import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 
@@ -20,11 +21,12 @@ public class RagPipeline implements RagQueryPort {
             Always cite your sources.
             """;
 
+    @Value("${rag.provider:openai}")
+    private String providerName;
+
     private final ChatClient chatClient;
-    private final VectorStore vectorStore;
 
     public RagPipeline(ChatClient.Builder builder, VectorStore vectorStore) {
-        this.vectorStore = vectorStore;
         this.chatClient = builder
                 .defaultSystem(SYSTEM_PROMPT)
                 .defaultAdvisors(new QuestionAnswerAdvisor(vectorStore))
@@ -34,15 +36,11 @@ public class RagPipeline implements RagQueryPort {
     @Override
     public RagAnswer query(String question, ChatMessage.ConversationContext context) {
         long start = System.currentTimeMillis();
-
         String answer = chatClient.prompt()
                 .user(question)
                 .call()
                 .content();
-
-        List<RagAnswer.SourceReference> sources = retrieveSources(question);
-
-        return new RagAnswer(answer, sources, "configured-provider", System.currentTimeMillis() - start);
+        return new RagAnswer(answer, List.of(), providerName, System.currentTimeMillis() - start);
     }
 
     @Override
@@ -51,16 +49,5 @@ public class RagPipeline implements RagQueryPort {
                 .user(question)
                 .stream()
                 .content();
-    }
-
-    private List<RagAnswer.SourceReference> retrieveSources(String question) {
-        return vectorStore.similaritySearch(question).stream()
-                .map(doc -> new RagAnswer.SourceReference(
-                        (String) doc.getMetadata().getOrDefault("documentId", doc.getId()),
-                        (String) doc.getMetadata().getOrDefault("title", "Unknown"),
-                        doc.getText().substring(0, Math.min(200, doc.getText().length())),
-                        (double) doc.getMetadata().getOrDefault("distance", 0.0)
-                ))
-                .toList();
     }
 }

@@ -33,7 +33,7 @@ public class IngestionService implements DocumentIngestionPort {
         documents.collectList()
                 .map(docs -> docs.stream().map(this::toSpringDoc).toList())
                 .map(splitter::apply)
-                .subscribe(vectorStore::add);
+                .subscribe(vectorStore::add, error -> { throw new io.github.ragHub.core.exception.RagException("Batch ingest failed", error); });
     }
 
     @Override

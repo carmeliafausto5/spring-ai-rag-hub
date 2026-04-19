@@ -1,0 +1,6 @@
+D:\Users\Zhang\Desktop\AIPRO\spring-ai-rag-hub\rag-core\src\main\java\io\github\ragHub\core\domain\ChatMessage.java
+D:\Users\Zhang\Desktop\AIPRO\spring-ai-rag-hub\rag-core\src\main\java\io\github\ragHub\core\domain\KnowledgeDocument.java
+D:\Users\Zhang\Desktop\AIPRO\spring-ai-rag-hub\rag-core\src\main\java\io\github\ragHub\core\domain\RagAnswer.java
+D:\Users\Zhang\Desktop\AIPRO\spring-ai-rag-hub\rag-core\src\main\java\io\github\ragHub\core\exception\RagException.java
+D:\Users\Zhang\Desktop\AIPRO\spring-ai-rag-hub\rag-core\src\main\java\io\github\ragHub\core\port\DocumentIngestionPort.java
+D:\Users\Zhang\Desktop\AIPRO\spring-ai-rag-hub\rag-core\src\main\java\io\github\ragHub\core\port\RagQueryPort.java

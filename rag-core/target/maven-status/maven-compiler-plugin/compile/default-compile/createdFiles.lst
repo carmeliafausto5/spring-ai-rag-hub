@@ -1,0 +1,8 @@
+io\github\ragHub\core\port\DocumentIngestionPort.class
+io\github\ragHub\core\domain\ChatMessage.class
+io\github\ragHub\core\domain\RagAnswer$SourceReference.class
+io\github\ragHub\core\domain\ChatMessage$ConversationContext.class
+io\github\ragHub\core\exception\RagException.class
+io\github\ragHub\core\domain\RagAnswer.class
+io\github\ragHub\core\port\RagQueryPort.class
+io\github\ragHub\core\domain\KnowledgeDocument.class

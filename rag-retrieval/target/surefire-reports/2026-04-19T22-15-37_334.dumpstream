@@ -1,0 +1,5 @@
+# Created at 2026-04-19T22:15:46.503
+Boot Manifest-JAR contains absolute paths in classpath 'D:\Users\Zhang\Desktop\AIPRO\spring-ai-rag-hub\rag-retrieval\target\test-classes'
+Hint: <argLine>-Djdk.net.URLClassPath.disableClassPathURLCheck=true</argLine>
+'other' has different root
+

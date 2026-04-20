@@ -1,11 +1,14 @@
 package io.github.ragHub.api.controller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.ragHub.api.dto.QueryRequest;
 import io.github.ragHub.core.domain.ChatMessage;
 import io.github.ragHub.core.domain.RagAnswer;
+import io.github.ragHub.core.domain.StreamChunk;
 import io.github.ragHub.core.port.RagQueryPort;
 import jakarta.validation.Valid;
 import org.springframework.http.MediaType;
+import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 
@@ -16,9 +19,11 @@ import java.util.List;
 public class RagController {
 
     private final RagQueryPort ragQueryPort;
+    private final ObjectMapper objectMapper;
 
-    public RagController(RagQueryPort ragQueryPort) {
+    public RagController(RagQueryPort ragQueryPort, ObjectMapper objectMapper) {
         this.ragQueryPort = ragQueryPort;
+        this.objectMapper = objectMapper;
     }
 
     @PostMapping("/query")
@@ -27,8 +32,19 @@ public class RagController {
     }
 
     @PostMapping(value = "/query/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public Flux<String> queryStream(@Valid @RequestBody QueryRequest request) {
-        return ragQueryPort.queryStream(request.question(), buildContext(request));
+    public Flux<ServerSentEvent<String>> queryStream(@Valid @RequestBody QueryRequest request) {
+        return ragQueryPort.queryStream(request.question(), buildContext(request))
+                .map(chunk -> {
+                    if (chunk instanceof StreamChunk.Token t) {
+                        return ServerSentEvent.<String>builder().event("token").data(t.text()).build();
+                    }
+                    StreamChunk.Done d = (StreamChunk.Done) chunk;
+                    try {
+                        return ServerSentEvent.<String>builder().event("done").data(objectMapper.writeValueAsString(d)).build();
+                    } catch (Exception e) {
+                        return ServerSentEvent.<String>builder().event("done").data("{}").build();
+                    }
+                });
     }
 
     private ChatMessage.ConversationContext buildContext(QueryRequest request) {

@@ -2,9 +2,12 @@ package io.github.ragHub.retrieval.pipeline;
 
 import io.github.ragHub.core.domain.ChatMessage;
 import io.github.ragHub.core.domain.RagAnswer;
+import io.github.ragHub.core.domain.StreamChunk;
 import io.github.ragHub.core.port.RagQueryPort;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.vectorstore.QuestionAnswerAdvisor;
+import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -33,10 +36,20 @@ public class RagPipeline implements RagQueryPort {
                 .build();
     }
 
+    private List<org.springframework.ai.chat.messages.Message> toSpringMessages(ChatMessage.ConversationContext ctx) {
+        if (ctx == null || ctx.history() == null || ctx.history().isEmpty()) return List.of();
+        return ctx.history().stream()
+                .<org.springframework.ai.chat.messages.Message>map(m -> "user".equals(m.role())
+                        ? new UserMessage(m.content())
+                        : new AssistantMessage(m.content()))
+                .toList();
+    }
+
     @Override
     public RagAnswer query(String question, ChatMessage.ConversationContext context) {
         long start = System.currentTimeMillis();
         String answer = chatClient.prompt()
+                .messages(toSpringMessages(context))
                 .user(question)
                 .call()
                 .content();
@@ -44,10 +57,16 @@ public class RagPipeline implements RagQueryPort {
     }
 
     @Override
-    public Flux<String> queryStream(String question, ChatMessage.ConversationContext context) {
-        return chatClient.prompt()
+    public Flux<StreamChunk> queryStream(String question, ChatMessage.ConversationContext context) {
+        long start = System.currentTimeMillis();
+        Flux<StreamChunk> tokens = chatClient.prompt()
+                .messages(toSpringMessages(context))
                 .user(question)
                 .stream()
-                .content();
+                .content()
+                .map(StreamChunk.Token::new);
+
+        StreamChunk.Done done = new StreamChunk.Done(List.of(), providerName, System.currentTimeMillis() - start);
+        return Flux.concat(tokens, Flux.just(done));
     }
 }

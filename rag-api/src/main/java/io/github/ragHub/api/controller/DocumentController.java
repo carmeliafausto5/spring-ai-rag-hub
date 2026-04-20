@@ -1,10 +1,13 @@
 package io.github.ragHub.api.controller;
 
+import io.github.ragHub.core.port.DocumentIngestionPort;
+import io.github.ragHub.core.port.DocumentQueryPort;
 import io.github.ragHub.ingestion.adapter.FileIngestionAdapter;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -19,9 +22,15 @@ public class DocumentController {
     );
 
     private final FileIngestionAdapter fileIngestionAdapter;
+    private final DocumentQueryPort documentQueryPort;
+    private final DocumentIngestionPort documentIngestionPort;
 
-    public DocumentController(FileIngestionAdapter fileIngestionAdapter) {
+    public DocumentController(FileIngestionAdapter fileIngestionAdapter,
+                               DocumentQueryPort documentQueryPort,
+                               DocumentIngestionPort documentIngestionPort) {
         this.fileIngestionAdapter = fileIngestionAdapter;
+        this.documentQueryPort = documentQueryPort;
+        this.documentIngestionPort = documentIngestionPort;
     }
 
     @PostMapping("/upload")
@@ -38,5 +47,16 @@ public class DocumentController {
         String docTitle = title != null ? title : filename;
         fileIngestionAdapter.ingestFile(file.getResource(), docTitle, Map.of("filename", filename));
         return ResponseEntity.ok(Map.of("status", "ingested", "title", docTitle));
+    }
+
+    @GetMapping
+    public ResponseEntity<List<Map<String, Object>>> list() {
+        return ResponseEntity.ok(documentQueryPort.listDocuments());
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(@PathVariable String id) {
+        documentIngestionPort.delete(id);
+        return ResponseEntity.noContent().build();
     }
 }

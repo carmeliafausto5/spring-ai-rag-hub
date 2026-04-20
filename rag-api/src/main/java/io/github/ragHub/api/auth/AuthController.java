@@ -3,6 +3,9 @@ package io.github.ragHub.api.auth;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import org.springframework.beans.factory.annotation.Value;
 
 import java.util.Map;
 
@@ -12,17 +15,22 @@ public class AuthController {
     private final UserRepository users;
     private final PasswordEncoder encoder;
     private final JwtUtil jwtUtil;
+    private final boolean registrationEnabled;
 
-    public AuthController(UserRepository users, PasswordEncoder encoder, JwtUtil jwtUtil) {
+    public AuthController(UserRepository users, PasswordEncoder encoder, JwtUtil jwtUtil,
+                          @Value("${rag.registration-enabled:false}") boolean registrationEnabled) {
         this.users = users;
         this.encoder = encoder;
         this.jwtUtil = jwtUtil;
+        this.registrationEnabled = registrationEnabled;
     }
 
-    record Credentials(String username, String password) {}
+    record Credentials(@NotBlank String username, @NotBlank String password) {}
 
     @PostMapping("/register")
-    public ResponseEntity<?> register(@RequestBody Credentials creds) {
+    public ResponseEntity<?> register(@Valid @RequestBody Credentials creds) {
+        if (!registrationEnabled)
+            return ResponseEntity.status(403).body(Map.of("error", "Registration is disabled"));
         if (users.findByUsername(creds.username()).isPresent())
             return ResponseEntity.status(409).body(Map.of("error", "Username taken"));
         User u = new User();
@@ -33,7 +41,7 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody Credentials creds) {
+    public ResponseEntity<?> login(@Valid @RequestBody Credentials creds) {
         return users.findByUsername(creds.username())
                 .filter(u -> encoder.matches(creds.password(), u.getPasswordHash()))
                 .<ResponseEntity<?>>map(u -> ResponseEntity.ok(Map.of("token", jwtUtil.generate(u.getUsername(), u.getRole()))))

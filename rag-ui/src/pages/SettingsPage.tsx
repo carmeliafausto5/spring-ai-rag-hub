@@ -97,7 +97,12 @@ export default function SettingsPage() {
     fetch("/api/v1/settings")
       .then((r) => r.json())
       .then((data) => setSettings((prev) => ({ ...prev, ...data })))
-      .catch(() => {});
+      .catch(() =>
+        setNotice({
+          type: "err",
+          text: "Failed to load settings from server.",
+        }),
+      );
   }, []);
 
   function onChange(key: string, value: string) {

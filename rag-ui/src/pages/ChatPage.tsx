@@ -9,6 +9,7 @@ interface SourceRef {
 }
 
 interface Message {
+  id: string;
   role: "user" | "assistant";
   content: string;
   sources?: SourceRef[];
@@ -40,11 +41,15 @@ export default function ChatPage() {
     setInput("");
 
     const history = messages.map((m) => ({ role: m.role, content: m.content }));
-    const userMsg: Message = { role: "user", content: question };
+    const userMsg: Message = {
+      id: crypto.randomUUID(),
+      role: "user",
+      content: question,
+    };
     setMessages((prev) => [
       ...prev,
       userMsg,
-      { role: "assistant", content: "", done: false },
+      { id: crypto.randomUUID(), role: "assistant", content: "", done: false },
     ]);
     setStreaming(true);
 
@@ -53,7 +58,10 @@ export default function ChatPage() {
     try {
       const res = await fetch("/api/v1/rag/query/stream", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("jwt") ?? ""}`,
+        },
         body: JSON.stringify({ question, history }),
         signal: abortRef.current.signal,
       });
@@ -161,9 +169,9 @@ export default function ChatPage() {
               Ask a question about your documents
             </div>
           )}
-          {messages.map((m, i) => (
+          {messages.map((m) => (
             <div
-              key={i}
+              key={m.id}
               style={{
                 display: "flex",
                 justifyContent: m.role === "user" ? "flex-end" : "flex-start",

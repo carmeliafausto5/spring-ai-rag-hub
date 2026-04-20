@@ -5,6 +5,7 @@ import org.springframework.core.env.Environment;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -12,7 +13,7 @@ import java.util.Map;
 @Service
 public class SettingsService implements ProviderSettingsPort {
 
-    private static final Map<String, String> DEFAULTS = new LinkedHashMap<>();
+    private static final Map<String, String> DEFAULTS;
     private static final Map<String, String> ENV_MAP = Map.ofEntries(
         Map.entry("rag.provider",       "RAG_PROVIDER"),
         Map.entry("openai.api-key",     "OPENAI_API_KEY"),
@@ -26,18 +27,20 @@ public class SettingsService implements ProviderSettingsPort {
     );
 
     static {
-        DEFAULTS.put("rag.provider",       "openai");
-        DEFAULTS.put("openai.api-key",     "");
-        DEFAULTS.put("openai.base-url",    "https://api.openai.com");
-        DEFAULTS.put("openai.model",       "gpt-4o");
-        DEFAULTS.put("anthropic.api-key",  "");
-        DEFAULTS.put("anthropic.base-url", "https://api.anthropic.com");
-        DEFAULTS.put("anthropic.model",    "claude-sonnet-4-6");
-        DEFAULTS.put("ollama.base-url",    "http://localhost:11434");
-        DEFAULTS.put("ollama.model",       "llama3.2");
-        DEFAULTS.put("rag.rate-limit",     "20");
-        DEFAULTS.put("rag.chunk-size",     "512");
-        DEFAULTS.put("rag.chunk-overlap",  "64");
+        Map<String, String> m = new LinkedHashMap<>();
+        m.put("rag.provider",       "openai");
+        m.put("openai.api-key",     "");
+        m.put("openai.base-url",    "https://api.openai.com");
+        m.put("openai.model",       "gpt-4o");
+        m.put("anthropic.api-key",  "");
+        m.put("anthropic.base-url", "https://api.anthropic.com");
+        m.put("anthropic.model",    "claude-sonnet-4-6");
+        m.put("ollama.base-url",    "http://localhost:11434");
+        m.put("ollama.model",       "llama3.2");
+        m.put("rag.rate-limit",     "20");
+        m.put("rag.chunk-size",     "512");
+        m.put("rag.chunk-overlap",  "64");
+        DEFAULTS = Collections.unmodifiableMap(m);
     }
 
     private final JdbcTemplate jdbc;
@@ -46,13 +49,6 @@ public class SettingsService implements ProviderSettingsPort {
     public SettingsService(JdbcTemplate jdbc, Environment env) {
         this.jdbc = jdbc;
         this.env = env;
-        jdbc.execute("""
-            CREATE TABLE IF NOT EXISTS app_settings (
-                key VARCHAR(255) PRIMARY KEY,
-                value TEXT,
-                updated_at TIMESTAMP DEFAULT NOW()
-            )
-            """);
     }
 
     @Override
@@ -79,13 +75,18 @@ public class SettingsService implements ProviderSettingsPort {
     }
 
     public void saveAll(Map<String, String> settings) {
+        if (settings.size() > 20)
+            throw new IllegalArgumentException("Too many settings in one request");
         for (Map.Entry<String, String> e : settings.entrySet()) {
             if (!DEFAULTS.containsKey(e.getKey())) continue;
+            String value = e.getValue();
+            if (value != null && value.length() > 1000)
+                throw new IllegalArgumentException("Value too long for key: " + e.getKey());
             jdbc.update("""
                 INSERT INTO app_settings(key, value, updated_at)
                 VALUES (?, ?, NOW())
                 ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = NOW()
-                """, e.getKey(), e.getValue());
+                """, e.getKey(), value);
         }
     }
 }

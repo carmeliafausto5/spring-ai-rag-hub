@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.ragHub.api.dto.QueryRequest;
 import io.github.ragHub.core.domain.ChatMessage;
 import io.github.ragHub.core.domain.RagAnswer;
+import io.github.ragHub.core.domain.SearchMode;
 import io.github.ragHub.core.domain.StreamChunk;
 import io.github.ragHub.core.port.RagQueryPort;
 import jakarta.validation.Valid;
@@ -28,12 +29,14 @@ public class RagController {
 
     @PostMapping("/query")
     public RagAnswer query(@Valid @RequestBody QueryRequest request) {
-        return ragQueryPort.query(request.question(), buildContext(request));
+        var mode = request.searchMode() != null ? request.searchMode() : io.github.ragHub.core.domain.SearchMode.VECTOR;
+        return ragQueryPort.query(request.question(), buildContext(request), mode);
     }
 
     @PostMapping(value = "/query/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public Flux<ServerSentEvent<String>> queryStream(@Valid @RequestBody QueryRequest request) {
-        return ragQueryPort.queryStream(request.question(), buildContext(request))
+        var mode = request.searchMode() != null ? request.searchMode() : io.github.ragHub.core.domain.SearchMode.VECTOR;
+        return ragQueryPort.queryStream(request.question(), buildContext(request), mode)
                 .map(chunk -> {
                     if (chunk instanceof StreamChunk.Token t) {
                         return ServerSentEvent.<String>builder().event("token").data(t.text()).build();

@@ -29,7 +29,11 @@ public class JwtFilter extends OncePerRequestFilter {
                         claims.getSubject(), null,
                         List.of(new SimpleGrantedAuthority("ROLE_" + claims.get("role"))));
                 SecurityContextHolder.getContext().setAuthentication(auth);
-            } catch (JwtException ignored) {}
+            } catch (JwtException e) {
+                res.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                res.getWriter().write("{\"error\":\"Invalid token\"}");
+                return;
+            }
         }
         chain.doFilter(req, res);
     }

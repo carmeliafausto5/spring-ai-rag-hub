@@ -1,5 +1,15 @@
+D:\Users\Zhang\Desktop\AIPRO\spring-ai-rag-hub\rag-api\src\main\java\io\github\ragHub\api\auth\AuthController.java
+D:\Users\Zhang\Desktop\AIPRO\spring-ai-rag-hub\rag-api\src\main\java\io\github\ragHub\api\auth\JwtFilter.java
+D:\Users\Zhang\Desktop\AIPRO\spring-ai-rag-hub\rag-api\src\main\java\io\github\ragHub\api\auth\JwtUtil.java
+D:\Users\Zhang\Desktop\AIPRO\spring-ai-rag-hub\rag-api\src\main\java\io\github\ragHub\api\auth\User.java
+D:\Users\Zhang\Desktop\AIPRO\spring-ai-rag-hub\rag-api\src\main\java\io\github\ragHub\api\auth\UserRepository.java
 D:\Users\Zhang\Desktop\AIPRO\spring-ai-rag-hub\rag-api\src\main\java\io\github\ragHub\api\config\GlobalExceptionHandler.java
+D:\Users\Zhang\Desktop\AIPRO\spring-ai-rag-hub\rag-api\src\main\java\io\github\ragHub\api\config\RateLimitFilter.java
+D:\Users\Zhang\Desktop\AIPRO\spring-ai-rag-hub\rag-api\src\main\java\io\github\ragHub\api\config\SecurityConfig.java
 D:\Users\Zhang\Desktop\AIPRO\spring-ai-rag-hub\rag-api\src\main\java\io\github\ragHub\api\controller\DocumentController.java
 D:\Users\Zhang\Desktop\AIPRO\spring-ai-rag-hub\rag-api\src\main\java\io\github\ragHub\api\controller\RagController.java
 D:\Users\Zhang\Desktop\AIPRO\spring-ai-rag-hub\rag-api\src\main\java\io\github\ragHub\api\dto\QueryRequest.java
+D:\Users\Zhang\Desktop\AIPRO\spring-ai-rag-hub\rag-api\src\main\java\io\github\ragHub\api\mcp\McpController.java
 D:\Users\Zhang\Desktop\AIPRO\spring-ai-rag-hub\rag-api\src\main\java\io\github\ragHub\api\RagHubApplication.java
+D:\Users\Zhang\Desktop\AIPRO\spring-ai-rag-hub\rag-api\src\main\java\io\github\ragHub\api\settings\SettingsController.java
+D:\Users\Zhang\Desktop\AIPRO\spring-ai-rag-hub\rag-api\src\main\java\io\github\ragHub\api\settings\SettingsService.java

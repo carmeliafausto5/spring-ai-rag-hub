@@ -22,9 +22,11 @@ public class SecurityConfig {
         return http
                 .csrf(c -> c.disable())
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .headers(h -> h.contentSecurityPolicy(csp -> csp.policyDirectives(
+                        "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'")))
                 .authorizeHttpRequests(a -> a
                         .requestMatchers("/api/v1/auth/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/v1/**", "/actuator/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/documents").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/rag/**").permitAll()
                         .anyRequest().authenticated()
                 )

@@ -5,32 +5,22 @@ spring:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/ragdb}
     username: ${DB_USERNAME:raguser}
     password: ${DB_PASSWORD:ragpass}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
   ai:
     vectorstore:
       pgvector:
         initialize-schema: true
         dimensions: 1536
-    openai:
-      base-url: ${OPENAI_BASE_URL:https://api.openai.com}
-      api-key: ${OPENAI_API_KEY:}
-      chat:
-        options:
-          model: ${OPENAI_MODEL:gpt-4o}
-    anthropic:
-      base-url: ${ANTHROPIC_BASE_URL:https://api.anthropic.com}
-      api-key: ${ANTHROPIC_API_KEY:}
-      chat:
-        options:
-          model: ${ANTHROPIC_MODEL:claude-sonnet-4-6}
-    ollama:
-      base-url: ${OLLAMA_BASE_URL:http://localhost:11434}
-      chat:
-        options:
-          model: ${OLLAMA_MODEL:llama3.2}
 
 rag:
   provider: ${RAG_PROVIDER:openai}
   api-key: ${RAG_API_KEY:}
+  registration-enabled: ${RAG_REGISTRATION_ENABLED:false}
   rate-limit:
     requests-per-minute: ${RAG_RATE_LIMIT:20}
   splitter:
@@ -46,7 +36,11 @@ management:
         include: health,info,metrics
   endpoint:
     health:
-      show-details: always
+      show-details: when-authorized
 
 server:
   port: 8080
+
+jwt:
+  secret: ${JWT_SECRET}
+  expiration-ms: 86400000

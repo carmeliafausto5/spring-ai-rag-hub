@@ -8,7 +8,8 @@ public record QueryRequest(
         @NotBlank String question,
         String sessionId,
         List<MessageDto> history,
-        SearchMode searchMode
+        SearchMode searchMode,
+        List<String> tags
 ) {
     public record MessageDto(String role, String content) {}
 }

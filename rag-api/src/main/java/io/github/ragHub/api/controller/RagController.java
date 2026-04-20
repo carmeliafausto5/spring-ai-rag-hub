@@ -8,6 +8,7 @@ import io.github.ragHub.core.domain.RagAnswer;
 import io.github.ragHub.core.domain.SearchMode;
 import io.github.ragHub.core.domain.StreamChunk;
 import io.github.ragHub.core.port.RagQueryPort;
+import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import org.springframework.http.MediaType;
 import org.springframework.http.codec.ServerSentEvent;
@@ -30,6 +31,7 @@ public class RagController {
         this.conversationService = conversationService;
     }
 
+    @Operation(summary = "Query the RAG pipeline and return a complete answer")
     @PostMapping("/query")
     public RagAnswer query(@Valid @RequestBody QueryRequest request) {
         var mode = request.searchMode() != null ? request.searchMode() : SearchMode.VECTOR;
@@ -40,6 +42,7 @@ public class RagController {
         return answer;
     }
 
+    @Operation(summary = "Query the RAG pipeline and stream the answer as SSE tokens")
     @PostMapping(value = "/query/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public Flux<ServerSentEvent<String>> queryStream(@Valid @RequestBody QueryRequest request) {
         var mode = request.searchMode() != null ? request.searchMode() : SearchMode.VECTOR;
@@ -74,6 +77,7 @@ public class RagController {
                             .map(m -> new ChatMessage(m.role(), m.content()))
                             .toList();
         }
-        return new ChatMessage.ConversationContext(request.sessionId(), history);
+        return new ChatMessage.ConversationContext(request.sessionId(), history,
+                request.tags() != null ? request.tags() : List.of());
     }
 }

@@ -52,7 +52,18 @@ management:
 server:
   port: 8080
   shutdown: graceful
+  # Enable virtual threads when running on Java 21+; no-op on Java 17
+  tomcat:
+    threads:
+      virtual:
+        enabled: ${VIRTUAL_THREADS_ENABLED:false}
 
 jwt:
   secret: ${JWT_SECRET}
   expiration-ms: 86400000
+
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html

@@ -26,6 +26,7 @@
         <module>rag-retrieval</module>
         <module>rag-providers</module>
         <module>rag-api</module>
+        <module>rag-tests</module>
     </modules>
 
     <properties>

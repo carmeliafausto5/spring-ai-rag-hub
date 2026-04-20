@@ -12,5 +12,9 @@ public record ChatMessage(String role, String content) {
         return new ChatMessage("assistant", content);
     }
 
-    public record ConversationContext(String sessionId, List<ChatMessage> history) {}
+    public record ConversationContext(String sessionId, List<ChatMessage> history, List<String> tags) {
+        public ConversationContext(String sessionId, List<ChatMessage> history) {
+            this(sessionId, history, List.of());
+        }
+    }
 }

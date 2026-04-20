@@ -63,13 +63,21 @@ public class RagPipeline implements RagQueryPort {
         this.plainClient = builder.defaultSystem(SYSTEM_PROMPT).build();
     }
 
+    private SearchRequest buildSearchRequest(String query, List<String> tags) {
+        SearchRequest.Builder b = SearchRequest.builder().query(query).topK(TOP_K);
+        if (tags != null && !tags.isEmpty()) {
+            String joined = tags.stream().map(t -> "'" + t + "'").collect(java.util.stream.Collectors.joining(","));
+            b.filterExpression("tags in [" + joined + "]");
+        }
+        return b.build();
+    }
+
     @Override
     public RagAnswer query(String question, ChatMessage.ConversationContext context, SearchMode mode) {
         long start = System.currentTimeMillis();
         String searchQuery = rewriteQuery(question, context);
-        List<Document> docs = mode == SearchMode.VECTOR
-                ? vectorStore.similaritySearch(SearchRequest.builder().query(searchQuery).topK(TOP_K).build())
-                : retrieveDocs(searchQuery, mode);
+        List<String> tags = context != null ? context.tags() : List.of();
+        List<Document> docs = retrieveDocs(searchQuery, mode, tags);
         List<RagAnswer.SourceReference> sources = toSources(reranker.rerank(searchQuery, docs));
         ChatClient client = mode == SearchMode.VECTOR ? advisorClient : plainClient;
         String userMsg = mode == SearchMode.VECTOR ? question : buildContextPrompt(question, docs);
@@ -87,9 +95,8 @@ public class RagPipeline implements RagQueryPort {
     public Flux<StreamChunk> queryStream(String question, ChatMessage.ConversationContext context, SearchMode mode) {
         long start = System.currentTimeMillis();
         String searchQuery = rewriteQuery(question, context);
-        List<Document> docs = mode == SearchMode.VECTOR
-                ? vectorStore.similaritySearch(SearchRequest.builder().query(searchQuery).topK(TOP_K).build())
-                : retrieveDocs(searchQuery, mode);
+        List<String> tags = context != null ? context.tags() : List.of();
+        List<Document> docs = retrieveDocs(searchQuery, mode, tags);
         List<RagAnswer.SourceReference> sources = toSources(reranker.rerank(searchQuery, docs));
         ChatClient client = mode == SearchMode.VECTOR ? advisorClient : plainClient;
         String userMsg = mode == SearchMode.VECTOR ? question : buildContextPrompt(question, docs);
@@ -117,9 +124,9 @@ public class RagPipeline implements RagQueryPort {
         return rewritten != null && !rewritten.isBlank() ? rewritten.trim() : question;
     }
 
-    private List<Document> retrieveDocs(String question, SearchMode mode) {
+    private List<Document> retrieveDocs(String question, SearchMode mode, List<String> tags) {
         List<Document> vectorDocs = mode != SearchMode.BM25
-                ? vectorStore.similaritySearch(SearchRequest.builder().query(question).topK(TOP_K).build())
+                ? vectorStore.similaritySearch(buildSearchRequest(question, tags))
                 : List.of();
         List<Document> bm25Docs = mode != SearchMode.VECTOR
                 ? bm25Retriever.retrieve(question, TOP_K)

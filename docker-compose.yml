@@ -69,6 +69,22 @@ services:
     depends_on:
       - prometheus
 
+  pg-backup:
+    image: postgres:16
+    depends_on:
+      - postgres
+    environment:
+      PGPASSWORD: ${DB_PASSWORD:-ragpass}
+    volumes:
+      - ./backups:/backups
+    entrypoint: >
+      sh -c "while true; do
+        pg_dump -h postgres -U ${DB_USERNAME:-raguser} ${DB_NAME:-ragdb} > /backups/backup_$$(date +%Y%m%d_%H%M%S).sql;
+        find /backups -name '*.sql' -mtime +7 -delete;
+        sleep 86400;
+      done"
+    restart: unless-stopped
+
 volumes:
   pgdata:
   ollama_data:

@@ -1,0 +1,11 @@
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+  ai:
+    openai:
+      api-key: test
+      base-url: http://localhost:9999  # non-existent, ingestion doesn't call LLM
+jwt:
+  secret: test-secret-key-that-is-at-least-256-bits-long-for-hmac-sha256
+  expiration-ms: 86400000

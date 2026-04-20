@@ -1,8 +1,11 @@
 package io.github.ragHub.api.controller;
 
+import io.github.ragHub.api.service.IngestionJobService;
 import io.github.ragHub.core.port.DocumentIngestionPort;
 import io.github.ragHub.core.port.DocumentQueryPort;
 import io.github.ragHub.core.port.FileIngestionPort;
+import io.swagger.v3.oas.annotations.Operation;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -11,6 +14,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 
 @RestController
 @RequestMapping("/api/v1/documents")
@@ -25,15 +31,22 @@ public class DocumentController {
     private final FileIngestionPort fileIngestionPort;
     private final DocumentQueryPort documentQueryPort;
     private final DocumentIngestionPort documentIngestionPort;
+    private final IngestionJobService ingestionJobService;
+    private final Executor ingestionExecutor;
 
     public DocumentController(FileIngestionPort fileIngestionPort,
                                DocumentQueryPort documentQueryPort,
-                               DocumentIngestionPort documentIngestionPort) {
+                               DocumentIngestionPort documentIngestionPort,
+                               IngestionJobService ingestionJobService,
+                               @Qualifier("ingestionExecutor") Executor ingestionExecutor) {
         this.fileIngestionPort = fileIngestionPort;
         this.documentQueryPort = documentQueryPort;
         this.documentIngestionPort = documentIngestionPort;
+        this.ingestionJobService = ingestionJobService;
+        this.ingestionExecutor = ingestionExecutor;
     }
 
+    @Operation(summary = "Upload a document for ingestion")
     @PostMapping("/upload")
     public ResponseEntity<Map<String, String>> upload(
             @RequestParam("file") MultipartFile file,
@@ -52,21 +65,43 @@ public class DocumentController {
         if (tags != null && !tags.isBlank()) {
             meta.put("tags", tags);
         }
-        fileIngestionPort.ingestFile(file.getResource(), docTitle, meta);
-        return ResponseEntity.ok(Map.of("status", "ingested", "title", docTitle));
+
+        String jobId = UUID.randomUUID().toString();
+        ingestionJobService.submit(jobId);
+
+        var resource = file.getResource();
+        CompletableFuture.runAsync(() -> {
+            try {
+                fileIngestionPort.ingestFile(resource, docTitle, meta);
+                ingestionJobService.complete(jobId);
+            } catch (Exception e) {
+                ingestionJobService.fail(jobId, e.getMessage());
+            }
+        }, ingestionExecutor);
+
+        return ResponseEntity.accepted().body(Map.of("jobId", jobId, "status", "PENDING"));
     }
 
+    @Operation(summary = "Get ingestion job status")
+    @GetMapping("/upload/status/{jobId}")
+    public ResponseEntity<Map<String, String>> jobStatus(@PathVariable String jobId) {
+        return ResponseEntity.ok(Map.of("jobId", jobId, "status", ingestionJobService.getStatus(jobId)));
+    }
+
+    @Operation(summary = "List all ingested documents")
     @GetMapping
     public ResponseEntity<List<DocumentQueryPort.DocumentSummary>> list() {
         return ResponseEntity.ok(documentQueryPort.listDocuments());
     }
 
+    @Operation(summary = "Delete a document by ID")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable String id) {
         documentIngestionPort.delete(id);
         return ResponseEntity.noContent().build();
     }
 
+    @Operation(summary = "Update tags for a document")
     @PatchMapping("/{id}/tags")
     public ResponseEntity<Void> updateTags(
             @PathVariable String id,
@@ -75,6 +110,7 @@ public class DocumentController {
         return ResponseEntity.noContent().build();
     }
 
+    @Operation(summary = "List chunk previews for a document")
     @GetMapping("/{id}/chunks")
     public ResponseEntity<List<String>> chunks(
             @PathVariable String id,

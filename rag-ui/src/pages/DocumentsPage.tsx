@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Trash2, Upload, FileText } from "lucide-react";
+import { Trash2, Upload, FileText, Eye, X, Edit2 } from "lucide-react";
 
 interface Doc {
   id: string;
@@ -9,14 +9,19 @@ interface Doc {
 
 export default function DocumentsPage() {
   const [docs, setDocs] = useState<Doc[]>([]);
-  const [file, setFile] = useState<File | null>(null);
+  const [files, setFiles] = useState<File[]>([]);
   const [title, setTitle] = useState("");
+  const [tags, setTags] = useState("");
   const [uploading, setUploading] = useState(false);
   const [notice, setNotice] = useState<{
     type: "ok" | "err";
     text: string;
   } | null>(null);
   const [dragging, setDragging] = useState(false);
+  const [preview, setPreview] = useState<{
+    id: string;
+    chunks: string[];
+  } | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -34,54 +39,97 @@ export default function DocumentsPage() {
   }
 
   async function upload() {
-    if (!file) return;
+    if (files.length === 0) return;
     setUploading(true);
     setNotice(null);
-    const form = new FormData();
-    form.append("file", file);
-    if (title.trim()) form.append("title", title.trim());
-    try {
-      const res = await fetch("/api/v1/documents/upload", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("jwt") ?? ""}`,
-        },
-        body: form,
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      setNotice({ type: "ok", text: `"${file.name}" uploaded successfully.` });
-      setFile(null);
-      setTitle("");
-      fetchDocs();
-    } catch (e) {
-      setNotice({
-        type: "err",
-        text: "Upload failed: " + (e instanceof Error ? e.message : String(e)),
-      });
-    } finally {
-      setUploading(false);
+    const auth = localStorage.getItem("jwt") ?? "";
+    let failed = 0;
+    for (const f of files) {
+      const form = new FormData();
+      form.append("file", f);
+      if (files.length === 1 && title.trim())
+        form.append("title", title.trim());
+      if (tags.trim()) form.append("tags", tags.trim());
+      try {
+        const res = await fetch("/api/v1/documents/upload", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${auth}`,
+            "X-API-Key": import.meta.env.VITE_API_KEY ?? "",
+          },
+          body: form,
+        });
+        if (!res.ok) failed++;
+      } catch {
+        failed++;
+      }
     }
+    const total = files.length;
+    if (failed === 0) {
+      setNotice({
+        type: "ok",
+        text: `${total} file${total > 1 ? "s" : ""} uploaded successfully.`,
+      });
+    } else {
+      setNotice({ type: "err", text: `${failed} of ${total} uploads failed.` });
+    }
+    setFiles([]);
+    setTitle("");
+    setTags("");
+    setUploading(false);
+    fetchDocs();
   }
 
-  async function deleteDoc(id: string, title: string) {
-    if (!window.confirm(`Delete "${title}"?`)) return;
+  async function deleteDoc(id: string, docTitle: string) {
+    if (!window.confirm(`Delete "${docTitle}"?`)) return;
     await fetch(`/api/v1/documents/${id}`, {
       method: "DELETE",
-      headers: { Authorization: `Bearer ${localStorage.getItem("jwt") ?? ""}` },
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("jwt") ?? ""}`,
+        "X-API-Key": import.meta.env.VITE_API_KEY ?? "",
+      },
     });
     setDocs((prev) => prev.filter((d) => d.id !== id));
+  }
+
+  async function editTags(id: string) {
+    const input = window.prompt("Enter tags (comma-separated):");
+    if (input === null) return;
+    const tagList = input
+      .split(",")
+      .map((t) => t.trim())
+      .filter(Boolean);
+    await fetch(`/api/v1/documents/${id}/tags`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${localStorage.getItem("jwt") ?? ""}`,
+      },
+      body: JSON.stringify(tagList),
+    });
+    fetchDocs();
+  }
+
+  async function previewDoc(id: string) {
+    try {
+      const res = await fetch(`/api/v1/documents/${id}/chunks?limit=3`);
+      const data = await res.json();
+      const chunks: string[] = Array.isArray(data) ? data : (data.chunks ?? []);
+      setPreview({ id, chunks });
+    } catch {
+      setPreview({ id, chunks: [] });
+    }
   }
 
   function onDrop(e: React.DragEvent) {
     e.preventDefault();
     setDragging(false);
-    const f = e.dataTransfer.files[0];
-    if (f) setFile(f);
+    const dropped = Array.from(e.dataTransfer.files);
+    if (dropped.length) setFiles(dropped);
   }
 
   return (
     <div style={{ maxWidth: 860, margin: "32px auto", padding: "0 16px" }}>
-      {/* Upload area */}
       <div
         style={{
           background: "#fff",
@@ -95,7 +143,6 @@ export default function DocumentsPage() {
         <h2 style={{ fontWeight: 600, fontSize: 15, marginBottom: 16 }}>
           Upload Document
         </h2>
-
         <div
           onClick={() => inputRef.current?.click()}
           onDragOver={(e) => {
@@ -120,13 +167,15 @@ export default function DocumentsPage() {
             style={{ color: "var(--gray-400)", marginBottom: 8 }}
           />
           <div style={{ color: "var(--gray-600)" }}>
-            {file ? (
+            {files.length > 0 ? (
               <span style={{ color: "var(--blue)", fontWeight: 500 }}>
-                {file.name}
+                {files.length === 1
+                  ? files[0].name
+                  : `${files.length} files selected`}
               </span>
             ) : (
               <>
-                Drag & drop or{" "}
+                <span>Drag & drop or </span>
                 <span style={{ color: "var(--blue)", fontWeight: 500 }}>
                   click to browse
                 </span>
@@ -139,23 +188,45 @@ export default function DocumentsPage() {
           <input
             ref={inputRef}
             type="file"
+            multiple
             accept=".pdf,.docx,.html,.md,.txt"
             style={{ display: "none" }}
             onChange={(e) => {
-              const f = e.target.files?.[0];
-              if (f) setFile(f);
+              const f = Array.from(e.target.files ?? []);
+              if (f.length) setFiles(f);
             }}
           />
         </div>
-
-        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: 8,
+            marginBottom: 8,
+          }}
+        >
+          {files.length <= 1 && (
+            <input
+              type="text"
+              placeholder="Title (optional)"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              style={{
+                border: "1px solid var(--gray-200)",
+                borderRadius: "var(--radius)",
+                padding: "7px 12px",
+                fontFamily: "inherit",
+                fontSize: 14,
+                outline: "none",
+              }}
+            />
+          )}
           <input
             type="text"
-            placeholder="Title (optional)"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Tags (comma-separated, optional)"
+            value={tags}
+            onChange={(e) => setTags(e.target.value)}
             style={{
-              flex: 1,
               border: "1px solid var(--gray-200)",
               borderRadius: "var(--radius)",
               padding: "7px 12px",
@@ -164,9 +235,11 @@ export default function DocumentsPage() {
               outline: "none",
             }}
           />
+        </div>
+        <div style={{ display: "flex", justifyContent: "flex-end" }}>
           <button
             onClick={upload}
-            disabled={!file || uploading}
+            disabled={files.length === 0 || uploading}
             style={{
               background: "var(--blue)",
               color: "#fff",
@@ -174,17 +247,17 @@ export default function DocumentsPage() {
               borderRadius: "var(--radius)",
               padding: "7px 16px",
               fontWeight: 500,
-              opacity: !file || uploading ? 0.5 : 1,
+              opacity: files.length === 0 || uploading ? 0.5 : 1,
               display: "flex",
               alignItems: "center",
               gap: 6,
+              cursor: "pointer",
             }}
           >
             <Upload size={14} />
             {uploading ? "Uploading…" : "Upload"}
           </button>
         </div>
-
         {notice && (
           <div
             style={{
@@ -201,7 +274,6 @@ export default function DocumentsPage() {
         )}
       </div>
 
-      {/* Document list */}
       <div
         style={{
           background: "#fff",
@@ -271,7 +343,7 @@ export default function DocumentsPage() {
                 >
                   ID
                 </th>
-                <th style={{ padding: "8px 20px", width: 48 }}></th>
+                <th style={{ padding: "8px 20px", width: 80 }}></th>
               </tr>
             </thead>
             <tbody>
@@ -308,26 +380,118 @@ export default function DocumentsPage() {
                     {doc.id}
                   </td>
                   <td style={{ padding: "10px 20px" }}>
-                    <button
-                      onClick={() => deleteDoc(doc.id, doc.title)}
-                      style={{
-                        background: "none",
-                        border: "none",
-                        color: "var(--gray-400)",
-                        padding: 4,
-                        borderRadius: 4,
-                        display: "flex",
-                        alignItems: "center",
-                      }}
-                      title="Delete"
-                    >
-                      <Trash2 size={15} />
-                    </button>
+                    <div style={{ display: "flex", gap: 4 }}>
+                      <button
+                        onClick={() => previewDoc(doc.id)}
+                        style={{
+                          background: "none",
+                          border: "none",
+                          color: "var(--gray-400)",
+                          padding: 4,
+                          borderRadius: 4,
+                          display: "flex",
+                          alignItems: "center",
+                          cursor: "pointer",
+                        }}
+                        title="Preview"
+                      >
+                        <Eye size={15} />
+                      </button>
+                      <button
+                        onClick={() => editTags(doc.id)}
+                        style={{
+                          background: "none",
+                          border: "none",
+                          color: "var(--gray-400)",
+                          padding: 4,
+                          borderRadius: 4,
+                          display: "flex",
+                          alignItems: "center",
+                          cursor: "pointer",
+                        }}
+                        title="Edit tags"
+                      >
+                        <Edit2 size={15} />
+                      </button>
+                      <button
+                        onClick={() => deleteDoc(doc.id, doc.title)}
+                        style={{
+                          background: "none",
+                          border: "none",
+                          color: "var(--gray-400)",
+                          padding: 4,
+                          borderRadius: 4,
+                          display: "flex",
+                          alignItems: "center",
+                          cursor: "pointer",
+                        }}
+                        title="Delete"
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
+        )}
+
+        {preview && (
+          <div style={{ borderTop: "1px solid var(--gray-200)", padding: 20 }}>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: 12,
+              }}
+            >
+              <span style={{ fontWeight: 600, fontSize: 14 }}>
+                Preview — {preview.id}
+              </span>
+              <button
+                onClick={() => setPreview(null)}
+                style={{
+                  background: "none",
+                  border: "none",
+                  color: "var(--gray-400)",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                }}
+              >
+                <X size={16} />
+              </button>
+            </div>
+            {preview.chunks.length === 0 ? (
+              <div style={{ color: "var(--gray-400)", fontSize: 13 }}>
+                No chunks available.
+              </div>
+            ) : (
+              preview.chunks.map((chunk, i) => (
+                <div
+                  key={i}
+                  style={{
+                    background: "var(--gray-50)",
+                    border: "1px solid var(--gray-200)",
+                    borderRadius: "var(--radius)",
+                    padding: "10px 14px",
+                    marginBottom: 8,
+                    fontSize: 13,
+                    color: "var(--gray-600)",
+                    lineHeight: 1.6,
+                  }}
+                >
+                  {typeof chunk === "string"
+                    ? chunk.slice(0, 200)
+                    : JSON.stringify(chunk).slice(0, 200)}
+                  {(typeof chunk === "string" ? chunk : JSON.stringify(chunk))
+                    .length > 200 && "…"}
+                </div>
+              ))
+            )}
+          </div>
         )}
       </div>
     </div>

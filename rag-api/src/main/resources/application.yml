@@ -7,7 +7,7 @@ spring:
     password: ${DB_PASSWORD:ragpass}
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
@@ -16,6 +16,8 @@ spring:
       pgvector:
         initialize-schema: true
         dimensions: 1536
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
 
 rag:
   provider: ${RAG_PROVIDER:openai}
@@ -28,18 +30,28 @@ rag:
     chunk-overlap: ${RAG_CHUNK_OVERLAP:64}
     min-chunk-size: ${RAG_MIN_CHUNK_SIZE:5}
     max-num-chunks: ${RAG_MAX_NUM_CHUNKS:10000}
+  llm:
+    timeout-seconds: ${RAG_LLM_TIMEOUT:30}
+  query-rewrite:
+    enabled: ${RAG_QUERY_REWRITE:true}
 
 management:
+  tracing:
+    sampling:
+      probability: 1.0
+  server:
+    port: 9090
   endpoints:
     web:
       exposure:
-        include: health,info,metrics
+        include: health,info,metrics,prometheus
   endpoint:
     health:
       show-details: when-authorized
 
 server:
   port: 8080
+  shutdown: graceful
 
 jwt:
   secret: ${JWT_SECRET}

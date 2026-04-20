@@ -16,9 +16,11 @@ import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 
+import java.time.Duration;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -41,6 +43,13 @@ public class RagPipeline implements RagQueryPort {
     private final KeywordReranker reranker;
     private final ProviderSettingsPort settings;
 
+    // LLM流式调用超时秒数，默认30秒，可通过配置项 rag.llm.timeout-seconds 覆盖
+    @Value("${rag.llm.timeout-seconds:30}")
+    private int llmTimeoutSeconds;
+
+    @Value("${rag.query-rewrite.enabled:true}")
+    private boolean queryRewriteEnabled;
+
     public RagPipeline(ChatClient.Builder builder, VectorStore vectorStore,
                        BM25Retriever bm25Retriever, KeywordReranker reranker,
                        ProviderSettingsPort settings) {
@@ -57,32 +66,55 @@ public class RagPipeline implements RagQueryPort {
     @Override
     public RagAnswer query(String question, ChatMessage.ConversationContext context, SearchMode mode) {
         long start = System.currentTimeMillis();
+        String searchQuery = rewriteQuery(question, context);
         List<Document> docs = mode == SearchMode.VECTOR
-                ? vectorStore.similaritySearch(SearchRequest.builder().query(question).topK(TOP_K).build())
-                : retrieveDocs(question, mode);
-        List<RagAnswer.SourceReference> sources = toSources(reranker.rerank(question, docs));
+                ? vectorStore.similaritySearch(SearchRequest.builder().query(searchQuery).topK(TOP_K).build())
+                : retrieveDocs(searchQuery, mode);
+        List<RagAnswer.SourceReference> sources = toSources(reranker.rerank(searchQuery, docs));
         ChatClient client = mode == SearchMode.VECTOR ? advisorClient : plainClient;
         String userMsg = mode == SearchMode.VECTOR ? question : buildContextPrompt(question, docs);
-        String answer = client.prompt()
+        ChatResponse response = client.prompt()
                 .messages(toSpringMessages(context)).user(userMsg)
-                .call().content();
-        return new RagAnswer(answer, sources, settings.get("rag.provider"), System.currentTimeMillis() - start);
+                .call().chatResponse();
+        if (mode == SearchMode.VECTOR) {
+            sources = extractSources(response);
+        }
+        return new RagAnswer(response != null ? response.getResult().getOutput().getText() : "",
+                sources, settings.get("rag.provider"), System.currentTimeMillis() - start);
     }
 
     @Override
     public Flux<StreamChunk> queryStream(String question, ChatMessage.ConversationContext context, SearchMode mode) {
         long start = System.currentTimeMillis();
+        String searchQuery = rewriteQuery(question, context);
         List<Document> docs = mode == SearchMode.VECTOR
-                ? vectorStore.similaritySearch(SearchRequest.builder().query(question).topK(TOP_K).build())
-                : retrieveDocs(question, mode);
-        List<RagAnswer.SourceReference> sources = toSources(reranker.rerank(question, docs));
+                ? vectorStore.similaritySearch(SearchRequest.builder().query(searchQuery).topK(TOP_K).build())
+                : retrieveDocs(searchQuery, mode);
+        List<RagAnswer.SourceReference> sources = toSources(reranker.rerank(searchQuery, docs));
         ChatClient client = mode == SearchMode.VECTOR ? advisorClient : plainClient;
         String userMsg = mode == SearchMode.VECTOR ? question : buildContextPrompt(question, docs);
+        // 对LLM流式响应加超时，超时时长由 rag.llm.timeout-seconds 配置
         Flux<StreamChunk> tokens = client.prompt()
                 .messages(toSpringMessages(context)).user(userMsg)
-                .stream().content().map(StreamChunk.Token::new);
+                .stream().content().map(StreamChunk.Token::new)
+                .timeout(Duration.ofSeconds(llmTimeoutSeconds));
         return Flux.concat(tokens, Flux.just(
                 new StreamChunk.Done(sources, settings.get("rag.provider"), System.currentTimeMillis() - start)));
+    }
+
+    private String rewriteQuery(String question, ChatMessage.ConversationContext ctx) {
+        if (!queryRewriteEnabled) return question;
+        if (ctx == null || ctx.history() == null || ctx.history().size() < 2) return question;
+        int start = Math.max(0, ctx.history().size() - 6);
+        StringBuilder sb = new StringBuilder();
+        ctx.history().subList(start, ctx.history().size())
+            .forEach(m -> sb.append(m.role()).append(": ").append(m.content()).append("\n"));
+        sb.append("user: ").append(question);
+        String prompt = "Given the conversation above, rewrite the last user message into a " +
+            "standalone search query that captures the full intent. " +
+            "Return ONLY the rewritten query, no explanation.\n\n" + sb;
+        String rewritten = plainClient.prompt().user(prompt).call().content();
+        return rewritten != null && !rewritten.isBlank() ? rewritten.trim() : question;
     }
 
     private List<Document> retrieveDocs(String question, SearchMode mode) {
@@ -121,7 +153,10 @@ public class RagPipeline implements RagQueryPort {
 
     private List<org.springframework.ai.chat.messages.Message> toSpringMessages(ChatMessage.ConversationContext ctx) {
         if (ctx == null || ctx.history() == null || ctx.history().isEmpty()) return List.of();
-        return ctx.history().stream()
+        var history = ctx.history();
+        // 只保留最近20条消息（10轮对话），避免超出上下文窗口
+        int start = Math.max(0, history.size() - 20);
+        return history.subList(start, history.size()).stream()
                 .<org.springframework.ai.chat.messages.Message>map(m -> "user".equals(m.role())
                         ? new UserMessage(m.content()) : new AssistantMessage(m.content()))
                 .toList();
@@ -133,5 +168,14 @@ public class RagPipeline implements RagQueryPort {
                 (String) d.getMetadata().getOrDefault("title", ""),
                 d.getText() != null && d.getText().length() > 200 ? d.getText().substring(0, 200) : d.getText(),
                 0.0)).toList();
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<RagAnswer.SourceReference> extractSources(ChatResponse response) {
+        if (response == null || response.getMetadata() == null) return List.of();
+        Object retrieved = response.getMetadata().get(QuestionAnswerAdvisor.RETRIEVED_DOCUMENTS);
+        if (!(retrieved instanceof List)) return List.of();
+        List<Document> docs = (List<Document>) retrieved;
+        return toSources(docs);
     }
 }

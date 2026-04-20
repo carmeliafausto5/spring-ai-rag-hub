@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -36,7 +37,8 @@ public class DocumentController {
     @PostMapping("/upload")
     public ResponseEntity<Map<String, String>> upload(
             @RequestParam("file") MultipartFile file,
-            @RequestParam(value = "title", required = false) String title) {
+            @RequestParam(value = "title", required = false) String title,
+            @RequestParam(value = "tags", required = false) String tags) {
 
         String contentType = file.getContentType();
         if (contentType == null || !ALLOWED_TYPES.contains(contentType)) {
@@ -45,7 +47,12 @@ public class DocumentController {
 
         String filename = file.getOriginalFilename() != null ? file.getOriginalFilename() : "unknown";
         String docTitle = title != null ? title : filename;
-        fileIngestionPort.ingestFile(file.getResource(), docTitle, Map.of("filename", filename));
+        Map<String, Object> meta = new HashMap<>();
+        meta.put("filename", filename);
+        if (tags != null && !tags.isBlank()) {
+            meta.put("tags", tags);
+        }
+        fileIngestionPort.ingestFile(file.getResource(), docTitle, meta);
         return ResponseEntity.ok(Map.of("status", "ingested", "title", docTitle));
     }
 
@@ -58,5 +65,20 @@ public class DocumentController {
     public ResponseEntity<Void> delete(@PathVariable String id) {
         documentIngestionPort.delete(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/{id}/tags")
+    public ResponseEntity<Void> updateTags(
+            @PathVariable String id,
+            @RequestBody List<String> tags) {
+        documentQueryPort.updateTags(id, tags);
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/{id}/chunks")
+    public ResponseEntity<List<String>> chunks(
+            @PathVariable String id,
+            @RequestParam(defaultValue = "3") int limit) {
+        return ResponseEntity.ok(documentQueryPort.listChunkPreviews(id, Math.min(limit, 10)));
     }
 }

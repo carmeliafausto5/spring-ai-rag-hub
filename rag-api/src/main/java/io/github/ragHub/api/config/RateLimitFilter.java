@@ -27,6 +27,10 @@ public class RateLimitFilter {
             HttpServletResponse res = (HttpServletResponse) response;
             String ip = req.getRemoteAddr();
             long now = System.currentTimeMillis();
+            if (buckets.size() > 10_000) {
+                long cutoff = now - 60_000L;
+                buckets.entrySet().removeIf(e -> e.getValue()[0] < cutoff);
+            }
             long[] bucket = buckets.computeIfAbsent(ip, k -> new long[]{now, 0});
             synchronized (bucket) {
                 if (now - bucket[0] > 60_000L) {
@@ -34,6 +38,7 @@ public class RateLimitFilter {
                     bucket[1] = 0;
                 }
                 if (bucket[1] >= requestsPerMinute) {
+                    res.setContentType("application/json");
                     res.setStatus(429);
                     res.getWriter().write("{\"error\":\"Too Many Requests\"}");
                     return;

@@ -6,6 +6,7 @@ import org.springframework.ai.document.Document;
 import org.springframework.ai.transformer.splitter.TokenTextSplitter;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 
@@ -17,14 +18,17 @@ public class IngestionService implements DocumentIngestionPort {
 
     private final VectorStore vectorStore;
     private final TokenTextSplitter splitter;
+    private final JdbcTemplate jdbc;
 
     public IngestionService(
             VectorStore vectorStore,
+            JdbcTemplate jdbc,
             @Value("${rag.splitter.chunk-size:512}") int chunkSize,
             @Value("${rag.splitter.chunk-overlap:64}") int chunkOverlap,
             @Value("${rag.splitter.min-chunk-size:5}") int minChunkSize,
             @Value("${rag.splitter.max-num-chunks:10000}") int maxNumChunks) {
         this.vectorStore = vectorStore;
+        this.jdbc = jdbc;
         this.splitter = new TokenTextSplitter(chunkSize, chunkOverlap, minChunkSize, maxNumChunks, true);
     }
 
@@ -44,7 +48,7 @@ public class IngestionService implements DocumentIngestionPort {
 
     @Override
     public void delete(String documentId) {
-        vectorStore.delete(List.of(documentId));
+        jdbc.update("DELETE FROM vector_store WHERE metadata->>'documentId' = ?", documentId);
     }
 
     private Document toSpringDoc(KnowledgeDocument doc) {

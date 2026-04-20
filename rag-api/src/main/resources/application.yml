@@ -11,20 +11,22 @@ spring:
         initialize-schema: true
         dimensions: 1536
     openai:
+      base-url: ${OPENAI_BASE_URL:https://api.openai.com}
       api-key: ${OPENAI_API_KEY:}
       chat:
         options:
-          model: gpt-4o
+          model: ${OPENAI_MODEL:gpt-4o}
     anthropic:
+      base-url: ${ANTHROPIC_BASE_URL:https://api.anthropic.com}
       api-key: ${ANTHROPIC_API_KEY:}
       chat:
         options:
-          model: claude-sonnet-4-6
+          model: ${ANTHROPIC_MODEL:claude-sonnet-4-6}
     ollama:
       base-url: ${OLLAMA_BASE_URL:http://localhost:11434}
       chat:
         options:
-          model: llama3.2
+          model: ${OLLAMA_MODEL:llama3.2}
 
 rag:
   provider: ${RAG_PROVIDER:openai}

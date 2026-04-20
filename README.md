@@ -118,6 +118,11 @@ spring-ai-rag-hub/
 | `OPENAI_API_KEY` | — | Required when `RAG_PROVIDER=openai` |
 | `ANTHROPIC_API_KEY` | — | Required when `RAG_PROVIDER=anthropic` |
 | `OLLAMA_BASE_URL` | `http://localhost:11434` | Ollama base URL |
+| `OPENAI_BASE_URL` | `https://api.openai.com` | Custom OpenAI-compatible API endpoint (for relay services) |
+| `ANTHROPIC_BASE_URL` | `https://api.anthropic.com` | Custom Anthropic API endpoint (for relay services) |
+| `OPENAI_MODEL` | `gpt-4o` | OpenAI model name |
+| `ANTHROPIC_MODEL` | `claude-sonnet-4-6` | Anthropic model name |
+| `OLLAMA_MODEL` | `llama3.2` | Ollama model name |
 
 ### Tech Stack
 
@@ -244,6 +249,11 @@ spring-ai-rag-hub/
 | `OPENAI_API_KEY` | — | 使用 OpenAI 时必填 |
 | `ANTHROPIC_API_KEY` | — | 使用 Anthropic 时必填 |
 | `OLLAMA_BASE_URL` | `http://localhost:11434` | Ollama 服务地址 |
+| `OPENAI_BASE_URL` | `https://api.openai.com` | 自定义 OpenAI 兼容 API 地址（用于中转服务） |
+| `ANTHROPIC_BASE_URL` | `https://api.anthropic.com` | 自定义 Anthropic API 地址（用于中转服务） |
+| `OPENAI_MODEL` | `gpt-4o` | OpenAI 模型名称 |
+| `ANTHROPIC_MODEL` | `claude-sonnet-4-6` | Anthropic 模型名称 |
+| `OLLAMA_MODEL` | `llama3.2` | Ollama 模型名称 |
 
 ### 技术栈
 
@@ -370,6 +380,11 @@ spring-ai-rag-hub/
 | `OPENAI_API_KEY` | — | `RAG_PROVIDER=openai` 時に必須 |
 | `ANTHROPIC_API_KEY` | — | `RAG_PROVIDER=anthropic` 時に必須 |
 | `OLLAMA_BASE_URL` | `http://localhost:11434` | Ollama ベース URL |
+| `OPENAI_BASE_URL` | `https://api.openai.com` | カスタム OpenAI 互換 API エンドポイント（中継サービス用） |
+| `ANTHROPIC_BASE_URL` | `https://api.anthropic.com` | カスタム Anthropic API エンドポイント（中継サービス用） |
+| `OPENAI_MODEL` | `gpt-4o` | OpenAI モデル名 |
+| `ANTHROPIC_MODEL` | `claude-sonnet-4-6` | Anthropic モデル名 |
+| `OLLAMA_MODEL` | `llama3.2` | Ollama モデル名 |
 
 ### 技術スタック
 
@@ -496,6 +511,11 @@ spring-ai-rag-hub/
 | `OPENAI_API_KEY` | — | `RAG_PROVIDER=openai` 시 필수 |
 | `ANTHROPIC_API_KEY` | — | `RAG_PROVIDER=anthropic` 시 필수 |
 | `OLLAMA_BASE_URL` | `http://localhost:11434` | Ollama 기본 URL |
+| `OPENAI_BASE_URL` | `https://api.openai.com` | 커스텀 OpenAI 호환 API 엔드포인트 (중계 서비스용) |
+| `ANTHROPIC_BASE_URL` | `https://api.anthropic.com` | 커스텀 Anthropic API 엔드포인트 (중계 서비스용) |
+| `OPENAI_MODEL` | `gpt-4o` | OpenAI 모델명 |
+| `ANTHROPIC_MODEL` | `claude-sonnet-4-6` | Anthropic 모델명 |
+| `OLLAMA_MODEL` | `llama3.2` | Ollama 모델명 |
 
 ### 기술 스택
 
@@ -622,6 +642,11 @@ spring-ai-rag-hub/
 | `OPENAI_API_KEY` | — | Requis si `RAG_PROVIDER=openai` |
 | `ANTHROPIC_API_KEY` | — | Requis si `RAG_PROVIDER=anthropic` |
 | `OLLAMA_BASE_URL` | `http://localhost:11434` | URL de base Ollama |
+| `OPENAI_BASE_URL` | `https://api.openai.com` | Point de terminaison API compatible OpenAI personnalisé (pour services relais) |
+| `ANTHROPIC_BASE_URL` | `https://api.anthropic.com` | Point de terminaison API Anthropic personnalisé (pour services relais) |
+| `OPENAI_MODEL` | `gpt-4o` | Nom du modèle OpenAI |
+| `ANTHROPIC_MODEL` | `claude-sonnet-4-6` | Nom du modèle Anthropic |
+| `OLLAMA_MODEL` | `llama3.2` | Nom du modèle Ollama |
 
 ### Stack technique
 
@@ -748,6 +773,11 @@ spring-ai-rag-hub/
 | `OPENAI_API_KEY` | — | Erforderlich bei `RAG_PROVIDER=openai` |
 | `ANTHROPIC_API_KEY` | — | Erforderlich bei `RAG_PROVIDER=anthropic` |
 | `OLLAMA_BASE_URL` | `http://localhost:11434` | Ollama-Basis-URL |
+| `OPENAI_BASE_URL` | `https://api.openai.com` | Benutzerdefinierter OpenAI-kompatibler API-Endpunkt (für Relay-Dienste) |
+| `ANTHROPIC_BASE_URL` | `https://api.anthropic.com` | Benutzerdefinierter Anthropic-API-Endpunkt (für Relay-Dienste) |
+| `OPENAI_MODEL` | `gpt-4o` | OpenAI-Modellname |
+| `ANTHROPIC_MODEL` | `claude-sonnet-4-6` | Anthropic-Modellname |
+| `OLLAMA_MODEL` | `llama3.2` | Ollama-Modellname |
 
 ### Technologie-Stack
 
@@ -874,6 +904,11 @@ spring-ai-rag-hub/
 | `OPENAI_API_KEY` | — | Requerido cuando `RAG_PROVIDER=openai` |
 | `ANTHROPIC_API_KEY` | — | Requerido cuando `RAG_PROVIDER=anthropic` |
 | `OLLAMA_BASE_URL` | `http://localhost:11434` | URL base de Ollama |
+| `OPENAI_BASE_URL` | `https://api.openai.com` | Endpoint de API compatible con OpenAI personalizado (para servicios de retransmisión) |
+| `ANTHROPIC_BASE_URL` | `https://api.anthropic.com` | Endpoint de API Anthropic personalizado (para servicios de retransmisión) |
+| `OPENAI_MODEL` | `gpt-4o` | Nombre del modelo OpenAI |
+| `ANTHROPIC_MODEL` | `claude-sonnet-4-6` | Nombre del modelo Anthropic |
+| `OLLAMA_MODEL` | `llama3.2` | Nombre del modelo Ollama |
 
 ### Stack tecnológico
 
@@ -1000,6 +1035,11 @@ spring-ai-rag-hub/
 | `OPENAI_API_KEY` | — | 使用 OpenAI 時必填 |
 | `ANTHROPIC_API_KEY` | — | 使用 Anthropic 時必填 |
 | `OLLAMA_BASE_URL` | `http://localhost:11434` | Ollama 服務位址 |
+| `OPENAI_BASE_URL` | `https://api.openai.com` | 自訂 OpenAI 相容 API 位址（用於中轉服務） |
+| `ANTHROPIC_BASE_URL` | `https://api.anthropic.com` | 自訂 Anthropic API 位址（用於中轉服務） |
+| `OPENAI_MODEL` | `gpt-4o` | OpenAI 模型名稱 |
+| `ANTHROPIC_MODEL` | `claude-sonnet-4-6` | Anthropic 模型名稱 |
+| `OLLAMA_MODEL` | `llama3.2` | Ollama 模型名稱 |
 
 ### 技術堆疊
 

@@ -4,6 +4,7 @@ import io.github.ragHub.core.domain.ChatMessage;
 import io.github.ragHub.core.domain.RagAnswer;
 import io.github.ragHub.core.domain.StreamChunk;
 import io.github.ragHub.core.port.RagQueryPort;
+import io.github.ragHub.retrieval.reranker.KeywordReranker;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.vectorstore.QuestionAnswerAdvisor;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -15,6 +16,7 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class RagPipeline implements RagQueryPort {
@@ -29,12 +31,14 @@ public class RagPipeline implements RagQueryPort {
     private String providerName;
 
     private final ChatClient chatClient;
+    private final KeywordReranker reranker;
 
-    public RagPipeline(ChatClient.Builder builder, VectorStore vectorStore) {
+    public RagPipeline(ChatClient.Builder builder, VectorStore vectorStore, KeywordReranker reranker) {
         this.chatClient = builder
                 .defaultSystem(SYSTEM_PROMPT)
                 .defaultAdvisors(new QuestionAnswerAdvisor(vectorStore))
                 .build();
+        this.reranker = reranker;
     }
 
     private List<org.springframework.ai.chat.messages.Message> toSpringMessages(ChatMessage.ConversationContext ctx) {
@@ -55,16 +59,19 @@ public class RagPipeline implements RagQueryPort {
                 .call()
                 .chatResponse();
         String answer = response.getResult().getOutput().getText();
-        return new RagAnswer(answer, extractSources(response), providerName, System.currentTimeMillis() - start);
+        return new RagAnswer(answer, extractSources(response, question), providerName, System.currentTimeMillis() - start);
     }
 
     @SuppressWarnings("unchecked")
-    private List<RagAnswer.SourceReference> extractSources(ChatResponse response) {
+    private List<RagAnswer.SourceReference> extractSources(ChatResponse response, String question) {
         Object raw = response.getMetadata().get("retrieved_documents");
         if (!(raw instanceof List<?> docs) || docs.isEmpty()) return List.of();
-        return docs.stream()
+        List<org.springframework.ai.document.Document> documents = docs.stream()
                 .filter(d -> d instanceof org.springframework.ai.document.Document)
                 .map(d -> (org.springframework.ai.document.Document) d)
+                .collect(Collectors.toList());
+        List<org.springframework.ai.document.Document> reranked = reranker.rerank(question, documents);
+        return reranked.stream()
                 .map(d -> new RagAnswer.SourceReference(
                         (String) d.getMetadata().getOrDefault("documentId", d.getId()),
                         (String) d.getMetadata().getOrDefault("title", ""),

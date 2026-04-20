@@ -29,6 +29,8 @@ spring:
 rag:
   provider: ${RAG_PROVIDER:openai}
   api-key: ${RAG_API_KEY:}
+  rate-limit:
+    requests-per-minute: ${RAG_RATE_LIMIT:20}
   splitter:
     chunk-size: ${RAG_CHUNK_SIZE:512}
     chunk-overlap: ${RAG_CHUNK_OVERLAP:64}

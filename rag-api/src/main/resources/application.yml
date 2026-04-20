@@ -7,14 +7,14 @@ spring:
     password: ${DB_PASSWORD:ragpass}
   jpa:
     hibernate:
-      ddl-auto: validate
+      ddl-auto: none
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
   ai:
     vectorstore:
       pgvector:
-        initialize-schema: true
+        initialize-schema: false
         dimensions: 1536
   lifecycle:
     timeout-per-shutdown-phase: 30s
@@ -38,7 +38,7 @@ rag:
 management:
   tracing:
     sampling:
-      probability: 1.0
+      probability: ${TRACING_PROBABILITY:0.1}
   server:
     port: 9090
   endpoints:
@@ -65,5 +65,24 @@ jwt:
 springdoc:
   api-docs:
     path: /api-docs
+    enabled: ${SWAGGER_ENABLED:false}
   swagger-ui:
     path: /swagger-ui.html
+    enabled: ${SWAGGER_ENABLED:false}
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      llm:
+        sliding-window-size: 10
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 30s
+        permitted-number-of-calls-in-half-open-state: 3
+  retry:
+    instances:
+      llm:
+        max-attempts: 3
+        wait-duration: 1s
+        retry-exceptions:
+          - java.io.IOException
+          - org.springframework.web.client.ResourceAccessException

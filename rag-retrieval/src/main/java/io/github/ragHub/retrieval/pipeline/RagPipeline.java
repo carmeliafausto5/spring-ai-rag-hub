@@ -1,5 +1,7 @@
 package io.github.ragHub.retrieval.pipeline;
 
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import io.github.resilience4j.retry.annotation.Retry;
 import io.github.ragHub.core.domain.ChatMessage;
 import io.github.ragHub.core.domain.RagAnswer;
 import io.github.ragHub.core.domain.SearchMode;
@@ -73,6 +75,8 @@ public class RagPipeline implements RagQueryPort {
     }
 
     @Override
+    @CircuitBreaker(name = "llm", fallbackMethod = "queryFallback")
+    @Retry(name = "llm")
     public RagAnswer query(String question, ChatMessage.ConversationContext context, SearchMode mode) {
         long start = System.currentTimeMillis();
         String searchQuery = rewriteQuery(question, context);
@@ -89,6 +93,11 @@ public class RagPipeline implements RagQueryPort {
         }
         return new RagAnswer(response != null ? response.getResult().getOutput().getText() : "",
                 sources, settings.get("rag.provider"), System.currentTimeMillis() - start);
+    }
+
+    public RagAnswer queryFallback(String question, ChatMessage.ConversationContext context, SearchMode mode, Throwable t) {
+        return new RagAnswer("Service temporarily unavailable. Please try again later.",
+                List.of(), settings.get("rag.provider"), 0);
     }
 
     @Override

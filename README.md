@@ -36,7 +36,9 @@ Built for production use, it includes **JWT authentication**, **rate limiting**,
 - **Conversation history** — Multi-turn Q&A with `ConversationContext`
 - **Hexagonal architecture** — `rag-core` has zero framework dependencies; all ports are interfaces
 - **Any file format** — PDF, DOCX, HTML, Markdown ingestion via Apache Tika
-- **pgvector** — PostgreSQL vector store with automatic schema initialization
+- **pgvector** — PostgreSQL vector store; schema managed by Flyway migrations
+- **Audit log** — Every document upload/delete recorded with actor, IP, and timestamp
+- **Circuit breaker** — Resilience4j circuit breaker + retry on LLM calls with graceful fallback
 - **Document management** — List and delete ingested documents via REST API
 - **Observability** — Spring Boot Actuator endpoints out of the box
 - **CI/CD** — GitHub Actions: test + Docker build → ghcr.io

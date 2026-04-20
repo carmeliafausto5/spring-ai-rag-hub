@@ -1,12 +1,15 @@
 package io.github.ragHub.api.controller;
 
+import io.github.ragHub.api.audit.AuditService;
 import io.github.ragHub.api.service.IngestionJobService;
 import io.github.ragHub.core.port.DocumentIngestionPort;
 import io.github.ragHub.core.port.DocumentQueryPort;
 import io.github.ragHub.core.port.FileIngestionPort;
 import io.swagger.v3.oas.annotations.Operation;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -33,17 +36,20 @@ public class DocumentController {
     private final DocumentIngestionPort documentIngestionPort;
     private final IngestionJobService ingestionJobService;
     private final Executor ingestionExecutor;
+    private final AuditService auditService;
 
     public DocumentController(FileIngestionPort fileIngestionPort,
                                DocumentQueryPort documentQueryPort,
                                DocumentIngestionPort documentIngestionPort,
                                IngestionJobService ingestionJobService,
-                               @Qualifier("ingestionExecutor") Executor ingestionExecutor) {
+                               @Qualifier("ingestionExecutor") Executor ingestionExecutor,
+                               AuditService auditService) {
         this.fileIngestionPort = fileIngestionPort;
         this.documentQueryPort = documentQueryPort;
         this.documentIngestionPort = documentIngestionPort;
         this.ingestionJobService = ingestionJobService;
         this.ingestionExecutor = ingestionExecutor;
+        this.auditService = auditService;
     }
 
     @Operation(summary = "Upload a document for ingestion")
@@ -51,7 +57,8 @@ public class DocumentController {
     public ResponseEntity<Map<String, String>> upload(
             @RequestParam("file") MultipartFile file,
             @RequestParam(value = "title", required = false) String title,
-            @RequestParam(value = "tags", required = false) String tags) {
+            @RequestParam(value = "tags", required = false) String tags,
+            HttpServletRequest request) {
 
         String contentType = file.getContentType();
         if (contentType == null || !ALLOWED_TYPES.contains(contentType)) {
@@ -68,12 +75,15 @@ public class DocumentController {
 
         String jobId = UUID.randomUUID().toString();
         ingestionJobService.submit(jobId);
+        String actor = SecurityContextHolder.getContext().getAuthentication().getName();
+        String ip = request.getRemoteAddr();
 
         var resource = file.getResource();
         CompletableFuture.runAsync(() -> {
             try {
                 fileIngestionPort.ingestFile(resource, docTitle, meta);
                 ingestionJobService.complete(jobId);
+                auditService.log(actor, "UPLOAD", "document", jobId, docTitle, ip);
             } catch (Exception e) {
                 ingestionJobService.fail(jobId, e.getMessage());
             }
@@ -96,8 +106,10 @@ public class DocumentController {
 
     @Operation(summary = "Delete a document by ID")
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable String id) {
+    public ResponseEntity<Void> delete(@PathVariable String id, HttpServletRequest request) {
         documentIngestionPort.delete(id);
+        String actor = SecurityContextHolder.getContext().getAuthentication().getName();
+        auditService.log(actor, "DELETE", "document", id, null, request.getRemoteAddr());
         return ResponseEntity.noContent().build();
     }
 

@@ -19,7 +19,11 @@
 
 ### Overview
 
-Spring AI RAG Hub is a modular, production-ready Retrieval-Augmented Generation (RAG) system built on **Spring Boot 3.4** + **Spring AI 1.0** + **pgvector**. It supports multiple AI providers (OpenAI, Anthropic Claude, Ollama) switchable via a single environment variable — no code changes required.
+Spring AI RAG Hub is a **production-grade, enterprise-ready RAG knowledge base** built on **Spring Boot 3.4** + **Spring AI 1.0** + **pgvector**. Designed with hexagonal architecture principles, it provides a clean separation between domain logic and infrastructure, making it highly maintainable and testable.
+
+The system supports **multiple AI providers** (OpenAI, Anthropic Claude, Ollama) switchable via environment variables with zero code changes. It features **hybrid retrieval** combining vector similarity search, BM25 full-text search, and RRF fusion, along with **multi-turn conversation** support via persistent history and query rewriting.
+
+Built for production use, it includes **JWT authentication**, **rate limiting**, **async document processing**, **Prometheus metrics**, **Swagger API docs**, **integration tests** with Testcontainers, and **automated PostgreSQL backups**. The React frontend provides document management with batch upload, tag filtering, and real-time streaming responses.
 
 ### Features
 
@@ -169,7 +173,11 @@ Please open an issue first for major changes.
 
 ### 项目简介
 
-Spring AI RAG Hub 是一个基于 **Spring Boot 3.4** + **Spring AI 1.0** + **pgvector** 构建的模块化、生产就绪的检索增强生成（RAG）知识库系统。支持 OpenAI、Anthropic Claude、Ollama 多个 AI 提供商，通过单个环境变量即可切换，无需修改代码。
+Spring AI RAG Hub 是一个**生产级企业级 RAG 知识库系统**，基于 **Spring Boot 3.4** + **Spring AI 1.0** + **pgvector** 构建。采用六边形架构设计，领域逻辑与基础设施完全解耦，具备高可维护性和可测试性。
+
+系统支持 **OpenAI、Anthropic Claude、Ollama** 多个 AI 提供商，通过环境变量一键切换，无需修改代码。具备**混合检索**能力，融合向量相似度搜索、BM25 全文检索和 RRF 排名融合，并通过持久化历史记录和查询改写支持**多轮对话**。
+
+面向生产环境设计，内置 **JWT 认证**、**速率限制**、**异步文档处理**（上传即返回 jobId）、**Prometheus 指标监控**、**Swagger API 文档**、基于 Testcontainers 的**集成测试**和**PostgreSQL 自动备份**。React 前端提供文档管理、批量上传、标签过滤和实时流式响应。
 
 ### 核心特性
 
@@ -304,7 +312,11 @@ spring-ai-rag-hub/
 
 ### 概要
 
-Spring AI RAG Hub は、**Spring Boot 3.4** + **Spring AI 1.0** + **pgvector** をベースに構築された、モジュール型のプロダクション対応 RAG（検索拡張生成）ナレッジベースシステムです。OpenAI、Anthropic Claude、Ollama など複数の AI プロバイダーをサポートし、環境変数一つで切り替え可能です。コード変更は不要です。
+Spring AI RAG Hub は、**Spring Boot 3.4** + **Spring AI 1.0** + **pgvector** をベースに構築された**プロダクション対応エンタープライズ RAG ナレッジベースシステム**です。ヘキサゴナルアーキテクチャを採用し、ドメインロジックとインフラストラクチャを完全に分離することで、高い保守性とテスト容易性を実現しています。
+
+**OpenAI・Anthropic Claude・Ollama** の複数 AI プロバイダーに対応し、環境変数一つで切り替え可能です。ベクター類似検索・BM25 全文検索・RRF ランキング融合を組み合わせた**ハイブリッド検索**を備え、履歴の永続化とクエリ書き換えによる**マルチターン会話**をサポートします。
+
+本番環境向けに設計されており、**JWT 認証**・**レート制限**・**非同期ドキュメント処理**（jobId 即時返却）・**Prometheus メトリクス**・**Swagger API ドキュメント**・Testcontainers による**統合テスト**・**PostgreSQL 自動バックアップ**を標準搭載。React フロントエンドでは、ドキュメント管理・一括アップロード・タグフィルタリング・リアルタイムストリーミング応答を提供します。
 
 ### 主な機能
 
@@ -439,7 +451,11 @@ spring-ai-rag-hub/
 
 ### 개요
 
-Spring AI RAG Hub는 **Spring Boot 3.4** + **Spring AI 1.0** + **pgvector** 기반의 모듈형 프로덕션급 RAG(검색 증강 생성) 지식 베이스 시스템입니다. OpenAI, Anthropic Claude, Ollama 등 여러 AI 프로바이더를 지원하며, 환경 변수 하나로 전환 가능합니다. 코드 변경이 필요 없습니다.
+Spring AI RAG Hub는 **Spring Boot 3.4** + **Spring AI 1.0** + **pgvector** 기반의 **프로덕션급 엔터프라이즈 RAG 지식 베이스 시스템**입니다. 헥사고날 아키텍처를 채택하여 도메인 로직과 인프라를 완전히 분리함으로써 높은 유지보수성과 테스트 용이성을 제공합니다.
+
+**OpenAI·Anthropic Claude·Ollama** 등 다양한 AI 프로바이더를 지원하며 환경 변수 하나로 전환 가능합니다. 벡터 유사도 검색·BM25 전문 검색·RRF 랭킹 융합을 결합한 **하이브리드 검색**을 제공하고, 히스토리 영속화와 쿼리 재작성을 통한 **멀티턴 대화**를 지원합니다.
+
+프로덕션 환경을 위해 **JWT 인증**·**속도 제한**·**비동기 문서 처리**（jobId 즉시 반환）·**Prometheus 메트릭**·**Swagger API 문서**·Testcontainers 기반 **통합 테스트**·**PostgreSQL 자동 백업**을 기본 제공합니다. React 프론트엔드에서는 문서 관리·일괄 업로드·태그 필터링·실시간 스트리밍 응답을 지원합니다.
 
 ### 주요 기능
 
@@ -574,7 +590,11 @@ spring-ai-rag-hub/
 
 ### Présentation
 
-Spring AI RAG Hub est un système RAG (Génération Augmentée par Récupération) modulaire et prêt pour la production, construit sur **Spring Boot 3.4** + **Spring AI 1.0** + **pgvector**. Il prend en charge plusieurs fournisseurs d'IA (OpenAI, Anthropic Claude, Ollama) commutables via une seule variable d'environnement — aucune modification de code requise.
+Spring AI RAG Hub est une **base de connaissances RAG de niveau production** construite sur **Spring Boot 3.4** + **Spring AI 1.0** + **pgvector**. Conçue selon les principes de l'architecture hexagonale, elle offre une séparation nette entre la logique métier et l'infrastructure, garantissant maintenabilité et testabilité à grande échelle.
+
+Le système prend en charge **plusieurs fournisseurs d'IA** (OpenAI, Anthropic Claude, Ollama) commutables via variable d'environnement sans aucune modification de code. Il propose une **recherche hybride** combinant similarité vectorielle, recherche plein texte BM25 et fusion RRF, ainsi qu'un support de **conversation multi-tours** via historique persistant et réécriture de requêtes.
+
+Conçu pour la production, il intègre **l'authentification JWT**, la **limitation de débit**, le **traitement asynchrone des documents**, les **métriques Prometheus**, la **documentation Swagger**, des **tests d'intégration** avec Testcontainers et des **sauvegardes PostgreSQL automatisées**. Le frontend React offre la gestion documentaire avec upload par lot, filtrage par tags et réponses en streaming temps réel.
 
 ### Fonctionnalités
 
@@ -709,7 +729,11 @@ Veuillez ouvrir une issue en premier pour les changements majeurs.
 
 ### Überblick
 
-Spring AI RAG Hub ist ein modulares, produktionsreifes RAG-System (Retrieval-Augmented Generation), das auf **Spring Boot 3.4** + **Spring AI 1.0** + **pgvector** aufbaut. Es unterstützt mehrere KI-Anbieter (OpenAI, Anthropic Claude, Ollama), die über eine einzige Umgebungsvariable umgeschaltet werden können — keine Codeänderungen erforderlich.
+Spring AI RAG Hub ist ein **produktionsreifes, unternehmenstaugliches RAG-Wissenssystem** auf Basis von **Spring Boot 3.4** + **Spring AI 1.0** + **pgvector**. Die hexagonale Architektur trennt Domänenlogik sauber von der Infrastruktur und sorgt für hohe Wartbarkeit und Testbarkeit.
+
+Das System unterstützt **mehrere KI-Anbieter** (OpenAI, Anthropic Claude, Ollama), die per Umgebungsvariable ohne Codeänderungen gewechselt werden können. Es bietet **hybride Suche** mit Vektorähnlichkeit, BM25-Volltextsuche und RRF-Fusion sowie **Mehrrundenkonversation** mit persistentem Verlauf und Query-Rewriting.
+
+Für den Produktionseinsatz enthält es **JWT-Authentifizierung**, **Rate Limiting**, **asynchrone Dokumentenverarbeitung**, **Prometheus-Metriken**, **Swagger-API-Dokumentation**, **Integrationstests** mit Testcontainers und **automatisierte PostgreSQL-Backups**. Das React-Frontend bietet Dokumentenverwaltung mit Batch-Upload, Tag-Filterung und Echtzeit-Streaming.
 
 ### Funktionen
 
@@ -844,7 +868,11 @@ Bitte zuerst ein Issue für größere Änderungen öffnen.
 
 ### Descripción general
 
-Spring AI RAG Hub es un sistema RAG (Generación Aumentada por Recuperación) modular y listo para producción, construido sobre **Spring Boot 3.4** + **Spring AI 1.0** + **pgvector**. Soporta múltiples proveedores de IA (OpenAI, Anthropic Claude, Ollama) intercambiables mediante una sola variable de entorno — sin cambios de código.
+Spring AI RAG Hub es una **base de conocimientos RAG de nivel empresarial y producción** construida sobre **Spring Boot 3.4** + **Spring AI 1.0** + **pgvector**. Diseñada con arquitectura hexagonal, separa limpiamente la lógica de dominio de la infraestructura, garantizando alta mantenibilidad y testabilidad.
+
+El sistema soporta **múltiples proveedores de IA** (OpenAI, Anthropic Claude, Ollama) intercambiables mediante variable de entorno sin cambios de código. Ofrece **búsqueda híbrida** combinando similitud vectorial, búsqueda de texto completo BM25 y fusión RRF, junto con soporte de **conversación multi-turno** con historial persistente y reescritura de consultas.
+
+Diseñado para producción, incluye **autenticación JWT**, **limitación de tasa**, **procesamiento asíncrono de documentos**, **métricas Prometheus**, **documentación Swagger**, **tests de integración** con Testcontainers y **copias de seguridad PostgreSQL automatizadas**. El frontend React ofrece gestión documental con carga por lotes, filtrado por etiquetas y respuestas en streaming en tiempo real.
 
 ### Características
 
@@ -979,7 +1007,11 @@ Por favor, abre un issue primero para cambios importantes.
 
 ### 專案簡介
 
-Spring AI RAG Hub 是一個基於 **Spring Boot 3.4** + **Spring AI 1.0** + **pgvector** 構建的模組化、生產就緒的檢索增強生成（RAG）知識庫系統。支援 OpenAI、Anthropic Claude、Ollama 多個 AI 供應商，透過單一環境變數即可切換，無需修改程式碼。
+Spring AI RAG Hub 是一套基於 **Spring Boot 3.4** + **Spring AI 1.0** + **pgvector** 打造的**生產級企業 RAG 知識庫系統**。採用六角形架構設計，將領域邏輯與基礎設施完全解耦，具備高度可維護性與可測試性。
+
+系統支援**多個 AI 供應商**（OpenAI、Anthropic Claude、Ollama），僅需設定環境變數即可切換，無需修改任何程式碼。提供**混合式檢索**，結合向量相似度搜尋、BM25 全文搜尋與 RRF 融合排序，並支援透過持久化歷史記錄與查詢改寫實現**多輪對話**。
+
+為生產環境量身打造，內建 **JWT 身份驗證**、**速率限制**、**非同步文件處理**、**Prometheus 指標監控**、**Swagger API 文件**、基於 Testcontainers 的**整合測試**，以及**PostgreSQL 自動備份**。React 前端提供文件管理功能，支援批次上傳、標籤篩選與即時串流回應。
 
 ### 核心特性
 

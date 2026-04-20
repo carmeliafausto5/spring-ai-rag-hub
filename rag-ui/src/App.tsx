@@ -1,11 +1,23 @@
 import { useState } from "react";
 import ChatPage from "./pages/ChatPage";
 import DocumentsPage from "./pages/DocumentsPage";
+import SettingsPage from "./pages/SettingsPage";
+import LoginPage from "./pages/LoginPage";
 
-type Tab = "chat" | "documents";
+type Tab = "chat" | "documents" | "settings";
 
 export default function App() {
+  const [token, setToken] = useState<string | null>(
+    localStorage.getItem("jwt"),
+  );
   const [tab, setTab] = useState<Tab>("chat");
+
+  if (!token) return <LoginPage onLogin={setToken} />;
+
+  function logout() {
+    localStorage.removeItem("jwt");
+    setToken(null);
+  }
 
   return (
     <div
@@ -34,7 +46,7 @@ export default function App() {
           RAG Hub
         </span>
         <nav style={{ display: "flex", gap: "4px", height: "100%" }}>
-          {(["chat", "documents"] as Tab[]).map((t) => (
+          {(["chat", "documents", "settings"] as Tab[]).map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
@@ -51,13 +63,36 @@ export default function App() {
                 transition: "color 0.15s",
               }}
             >
-              {t === "chat" ? "Chat" : "Documents"}
+              {t === "chat"
+                ? "Chat"
+                : t === "documents"
+                  ? "Documents"
+                  : "Settings"}
             </button>
           ))}
         </nav>
+        <button
+          onClick={logout}
+          style={{
+            marginLeft: "auto",
+            background: "none",
+            border: "none",
+            color: "var(--gray-500)",
+            fontSize: 13,
+            cursor: "pointer",
+          }}
+        >
+          Logout
+        </button>
       </header>
       <main style={{ flex: 1, display: "flex", flexDirection: "column" }}>
-        {tab === "chat" ? <ChatPage /> : <DocumentsPage />}
+        {tab === "chat" ? (
+          <ChatPage />
+        ) : tab === "documents" ? (
+          <DocumentsPage />
+        ) : (
+          <SettingsPage />
+        )}
       </main>
     </div>
   );

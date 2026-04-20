@@ -1,42 +1,38 @@
 package io.github.ragHub.retrieval;
 
-import io.github.ragHub.core.domain.ChatMessage;
+import io.github.ragHub.core.port.ProviderSettingsPort;
 import io.github.ragHub.retrieval.pipeline.RagPipeline;
+import io.github.ragHub.retrieval.reranker.KeywordReranker;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.vectorstore.VectorStore;
-
-import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
 class RagPipelineTest {
 
-    @Test
-    void queryStream_delegatesToChatClient() {
-        var vectorStore = mock(VectorStore.class);
+    private RagPipeline buildPipeline() {
         var builder = mock(ChatClient.Builder.class, RETURNS_DEEP_STUBS);
         when(builder.defaultSystem(anyString())).thenReturn(builder);
         when(builder.defaultAdvisors(anyList())).thenReturn(builder);
         when(builder.build()).thenReturn(mock(ChatClient.class, RETURNS_DEEP_STUBS));
-
-        var pipeline = new RagPipeline(builder, vectorStore);
-        assertThat(pipeline).isNotNull();
+        var settings = mock(ProviderSettingsPort.class);
+        when(settings.get("rag.provider")).thenReturn("openai");
+        return new RagPipeline(builder, mock(VectorStore.class), new KeywordReranker(), settings);
     }
 
     @Test
-    void retrieveSources_returnsEmptyWhenNoResults() {
-        var vectorStore = mock(VectorStore.class);
-        var builder = mock(ChatClient.Builder.class, RETURNS_DEEP_STUBS);
-        when(builder.defaultSystem(anyString())).thenReturn(builder);
-        when(builder.defaultAdvisors(anyList())).thenReturn(builder);
-        when(builder.build()).thenReturn(mock(ChatClient.class, RETURNS_DEEP_STUBS));
-        when(vectorStore.similaritySearch(anyString())).thenReturn(List.of());
+    void pipeline_constructsSuccessfully() {
+        assertThat(buildPipeline()).isNotNull();
+    }
 
-        var pipeline = new RagPipeline(builder, vectorStore);
-
-        assertThat(pipeline).isNotNull();
-        verify(vectorStore, never()).similaritySearch(anyString());
+    @Test
+    void reranker_sortsDocumentsByKeywordOverlap() {
+        var reranker = new KeywordReranker();
+        var doc1 = new org.springframework.ai.document.Document("spring ai vector store");
+        var doc2 = new org.springframework.ai.document.Document("unrelated content here");
+        var result = reranker.rerank("spring vector", java.util.List.of(doc2, doc1));
+        assertThat(result.get(0).getText()).contains("spring");
     }
 }

@@ -43,7 +43,9 @@ export default function DocumentsPage() {
     try {
       const res = await fetch("/api/v1/documents/upload", {
         method: "POST",
-        headers: { "X-API-Key": import.meta.env.VITE_API_KEY ?? "" },
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("jwt") ?? ""}`,
+        },
         body: form,
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -65,7 +67,7 @@ export default function DocumentsPage() {
     if (!window.confirm(`Delete "${title}"?`)) return;
     await fetch(`/api/v1/documents/${id}`, {
       method: "DELETE",
-      headers: { "X-API-Key": import.meta.env.VITE_API_KEY ?? "" },
+      headers: { Authorization: `Bearer ${localStorage.getItem("jwt") ?? ""}` },
     });
     setDocs((prev) => prev.filter((d) => d.id !== id));
   }

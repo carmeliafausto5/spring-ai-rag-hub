@@ -13,24 +13,22 @@ import static org.mockito.Mockito.*;
 
 class IngestionServiceTest {
 
+    private IngestionService service(VectorStore vs) {
+        return new IngestionService(vs, 512, 64, 5, 10000);
+    }
+
     @Test
     void ingest_splitsAndStoresDocument() {
         var vectorStore = mock(VectorStore.class);
-        var service = new IngestionService(vectorStore);
-
         var doc = KnowledgeDocument.of("Test Doc", "Hello world. ".repeat(100), "file://test.txt", Map.of());
-        service.ingest(doc);
-
+        service(vectorStore).ingest(doc);
         verify(vectorStore, atLeastOnce()).add(anyList());
     }
 
     @Test
     void delete_removesFromVectorStore() {
         var vectorStore = mock(VectorStore.class);
-        var service = new IngestionService(vectorStore);
-
-        service.delete("doc-123");
-
+        service(vectorStore).delete("doc-123");
         verify(vectorStore).delete(List.of("doc-123"));
     }
 }

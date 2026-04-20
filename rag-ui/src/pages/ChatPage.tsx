@@ -1,9 +1,17 @@
 import { useState, useRef, useEffect } from "react";
 import { Send } from "lucide-react";
 
+interface SourceRef {
+  documentId: string;
+  title: string;
+  excerpt: string;
+  score: number;
+}
+
 interface Message {
   role: "user" | "assistant";
   content: string;
+  sources?: SourceRef[];
   meta?: { provider?: string; latencyMs?: number };
   done?: boolean;
 }
@@ -86,6 +94,7 @@ export default function ChatPage() {
                 const last = next[next.length - 1];
                 if (last.role === "assistant") {
                   last.done = true;
+                  last.sources = parsed.sources ?? [];
                   last.meta = {
                     provider: parsed.provider,
                     latencyMs: parsed.latencyMs ?? parsed.latency,
@@ -198,6 +207,52 @@ export default function ChatPage() {
                       .join(" · ")}
                   </div>
                 )}
+                {m.role === "assistant" &&
+                  m.done &&
+                  m.sources &&
+                  m.sources.length > 0 && (
+                    <div
+                      style={{
+                        marginTop: 8,
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: 6,
+                      }}
+                    >
+                      {m.sources.map((s, si) => (
+                        <div
+                          key={si}
+                          style={{
+                            background: "var(--gray-50)",
+                            border: "1px solid var(--gray-200)",
+                            borderRadius: "var(--radius)",
+                            padding: "6px 10px",
+                            fontSize: 12,
+                          }}
+                        >
+                          <div
+                            style={{
+                              fontWeight: 600,
+                              color: "var(--gray-700)",
+                              marginBottom: 2,
+                            }}
+                          >
+                            [{si + 1}] {s.title || s.documentId}
+                          </div>
+                          {s.excerpt && (
+                            <div
+                              style={{
+                                color: "var(--gray-500)",
+                                lineHeight: 1.4,
+                              }}
+                            >
+                              {s.excerpt}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
               </div>
             </div>
           ))}

@@ -5,6 +5,7 @@ import io.github.ragHub.core.port.DocumentIngestionPort;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.transformer.splitter.TokenTextSplitter;
 import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 
@@ -17,9 +18,14 @@ public class IngestionService implements DocumentIngestionPort {
     private final VectorStore vectorStore;
     private final TokenTextSplitter splitter;
 
-    public IngestionService(VectorStore vectorStore) {
+    public IngestionService(
+            VectorStore vectorStore,
+            @Value("${rag.splitter.chunk-size:512}") int chunkSize,
+            @Value("${rag.splitter.chunk-overlap:64}") int chunkOverlap,
+            @Value("${rag.splitter.min-chunk-size:5}") int minChunkSize,
+            @Value("${rag.splitter.max-num-chunks:10000}") int maxNumChunks) {
         this.vectorStore = vectorStore;
-        this.splitter = new TokenTextSplitter(512, 64, 5, 10000, true);
+        this.splitter = new TokenTextSplitter(chunkSize, chunkOverlap, minChunkSize, maxNumChunks, true);
     }
 
     @Override

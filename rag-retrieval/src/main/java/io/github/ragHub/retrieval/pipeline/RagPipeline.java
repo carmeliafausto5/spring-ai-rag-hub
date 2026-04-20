@@ -8,6 +8,7 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.vectorstore.QuestionAnswerAdvisor;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -48,12 +49,28 @@ public class RagPipeline implements RagQueryPort {
     @Override
     public RagAnswer query(String question, ChatMessage.ConversationContext context) {
         long start = System.currentTimeMillis();
-        String answer = chatClient.prompt()
+        var response = chatClient.prompt()
                 .messages(toSpringMessages(context))
                 .user(question)
                 .call()
-                .content();
-        return new RagAnswer(answer, List.of(), providerName, System.currentTimeMillis() - start);
+                .chatResponse();
+        String answer = response.getResult().getOutput().getText();
+        return new RagAnswer(answer, extractSources(response), providerName, System.currentTimeMillis() - start);
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<RagAnswer.SourceReference> extractSources(ChatResponse response) {
+        Object raw = response.getMetadata().get("retrieved_documents");
+        if (!(raw instanceof List<?> docs) || docs.isEmpty()) return List.of();
+        return docs.stream()
+                .filter(d -> d instanceof org.springframework.ai.document.Document)
+                .map(d -> (org.springframework.ai.document.Document) d)
+                .map(d -> new RagAnswer.SourceReference(
+                        (String) d.getMetadata().getOrDefault("documentId", d.getId()),
+                        (String) d.getMetadata().getOrDefault("title", ""),
+                        d.getText() != null && d.getText().length() > 200 ? d.getText().substring(0, 200) : d.getText(),
+                        0.0))
+                .toList();
     }
 
     @Override

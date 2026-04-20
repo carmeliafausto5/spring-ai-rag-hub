@@ -43,6 +43,7 @@ export default function DocumentsPage() {
     try {
       const res = await fetch("/api/v1/documents/upload", {
         method: "POST",
+        headers: { "X-API-Key": import.meta.env.VITE_API_KEY ?? "" },
         body: form,
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -60,8 +61,12 @@ export default function DocumentsPage() {
     }
   }
 
-  async function deleteDoc(id: string) {
-    await fetch(`/api/v1/documents/${id}`, { method: "DELETE" });
+  async function deleteDoc(id: string, title: string) {
+    if (!window.confirm(`Delete "${title}"?`)) return;
+    await fetch(`/api/v1/documents/${id}`, {
+      method: "DELETE",
+      headers: { "X-API-Key": import.meta.env.VITE_API_KEY ?? "" },
+    });
     setDocs((prev) => prev.filter((d) => d.id !== id));
   }
 
@@ -302,7 +307,7 @@ export default function DocumentsPage() {
                   </td>
                   <td style={{ padding: "10px 20px" }}>
                     <button
-                      onClick={() => deleteDoc(doc.id)}
+                      onClick={() => deleteDoc(doc.id, doc.title)}
                       style={{
                         background: "none",
                         border: "none",

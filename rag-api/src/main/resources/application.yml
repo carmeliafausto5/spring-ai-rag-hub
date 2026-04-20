@@ -2,9 +2,9 @@ spring:
   application:
     name: spring-ai-rag-hub
   datasource:
-    url: jdbc:postgresql://localhost:5432/ragdb
-    username: raguser
-    password: ragpass
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/ragdb}
+    username: ${DB_USERNAME:raguser}
+    password: ${DB_PASSWORD:ragpass}
   ai:
     vectorstore:
       pgvector:
@@ -28,6 +28,12 @@ spring:
 
 rag:
   provider: ${RAG_PROVIDER:openai}
+  api-key: ${RAG_API_KEY:}
+  splitter:
+    chunk-size: ${RAG_CHUNK_SIZE:512}
+    chunk-overlap: ${RAG_CHUNK_OVERLAP:64}
+    min-chunk-size: ${RAG_MIN_CHUNK_SIZE:5}
+    max-num-chunks: ${RAG_MAX_NUM_CHUNKS:10000}
 
 management:
   endpoints:

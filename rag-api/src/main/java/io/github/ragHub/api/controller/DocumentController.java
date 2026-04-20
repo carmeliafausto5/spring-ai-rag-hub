@@ -2,7 +2,7 @@ package io.github.ragHub.api.controller;
 
 import io.github.ragHub.core.port.DocumentIngestionPort;
 import io.github.ragHub.core.port.DocumentQueryPort;
-import io.github.ragHub.ingestion.adapter.FileIngestionAdapter;
+import io.github.ragHub.core.port.FileIngestionPort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -21,14 +21,14 @@ public class DocumentController {
             "text/html", "text/markdown", "text/plain"
     );
 
-    private final FileIngestionAdapter fileIngestionAdapter;
+    private final FileIngestionPort fileIngestionPort;
     private final DocumentQueryPort documentQueryPort;
     private final DocumentIngestionPort documentIngestionPort;
 
-    public DocumentController(FileIngestionAdapter fileIngestionAdapter,
+    public DocumentController(FileIngestionPort fileIngestionPort,
                                DocumentQueryPort documentQueryPort,
                                DocumentIngestionPort documentIngestionPort) {
-        this.fileIngestionAdapter = fileIngestionAdapter;
+        this.fileIngestionPort = fileIngestionPort;
         this.documentQueryPort = documentQueryPort;
         this.documentIngestionPort = documentIngestionPort;
     }
@@ -45,12 +45,12 @@ public class DocumentController {
 
         String filename = file.getOriginalFilename() != null ? file.getOriginalFilename() : "unknown";
         String docTitle = title != null ? title : filename;
-        fileIngestionAdapter.ingestFile(file.getResource(), docTitle, Map.of("filename", filename));
+        fileIngestionPort.ingestFile(file.getResource(), docTitle, Map.of("filename", filename));
         return ResponseEntity.ok(Map.of("status", "ingested", "title", docTitle));
     }
 
     @GetMapping
-    public ResponseEntity<List<Map<String, Object>>> list() {
+    public ResponseEntity<List<DocumentQueryPort.DocumentSummary>> list() {
         return ResponseEntity.ok(documentQueryPort.listDocuments());
     }
 

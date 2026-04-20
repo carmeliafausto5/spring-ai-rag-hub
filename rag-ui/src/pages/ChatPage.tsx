@@ -13,10 +13,18 @@ export default function ChatPage() {
   const [input, setInput] = useState("");
   const [streaming, setStreaming] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const abortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  useEffect(
+    () => () => {
+      abortRef.current?.abort();
+    },
+    [],
+  );
 
   async function send() {
     const question = input.trim();
@@ -32,11 +40,14 @@ export default function ChatPage() {
     ]);
     setStreaming(true);
 
+    abortRef.current = new AbortController();
+
     try {
       const res = await fetch("/api/v1/rag/query/stream", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ question, history }),
+        signal: abortRef.current.signal,
       });
       if (!res.body) throw new Error("No response body");
 
@@ -94,6 +105,7 @@ export default function ChatPage() {
         }
       }
     } catch (e) {
+      if (e instanceof Error && e.name === "AbortError") return;
       setMessages((prev) => {
         const next = [...prev];
         const last = next[next.length - 1];

@@ -43,16 +43,23 @@ public class RagController {
     @PostMapping(value = "/query/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public Flux<ServerSentEvent<String>> queryStream(@Valid @RequestBody QueryRequest request) {
         var mode = request.searchMode() != null ? request.searchMode() : SearchMode.VECTOR;
+        var sessionId = request.sessionId();
+        StringBuilder accumulated = new StringBuilder();
         return ragQueryPort.queryStream(request.question(), buildContext(request), mode)
                 .map(chunk -> {
                     if (chunk instanceof StreamChunk.Token t) {
+                        accumulated.append(t.text());
                         return ServerSentEvent.<String>builder().event("token").data(t.text()).build();
                     }
                     StreamChunk.Done d = (StreamChunk.Done) chunk;
+                    if (sessionId != null && !sessionId.isBlank()) {
+                        conversationService.appendMessages(sessionId, request.question(), accumulated.toString());
+                    }
                     try {
                         return ServerSentEvent.<String>builder().event("done").data(objectMapper.writeValueAsString(d)).build();
                     } catch (Exception e) {
-                        return ServerSentEvent.<String>builder().event("done").data("{}").build();
+                        return ServerSentEvent.<String>builder().event("done")
+                                .data("{\"error\":\"serialization failed\"}").build();
                     }
                 });
     }

@@ -20,9 +20,13 @@ public class ConversationService {
     @Transactional(readOnly = true)
     public List<ChatMessage> loadHistory(String sessionId) {
         return repo.findById(sessionId)
-                .map(c -> c.getMessages().stream()
-                        .map(m -> new ChatMessage(m.getRole(), m.getContent()))
-                        .toList())
+                .map(c -> {
+                    var msgs = c.getMessages();
+                    int start = Math.max(0, msgs.size() - 20);
+                    return msgs.subList(start, msgs.size()).stream()
+                            .map(m -> new ChatMessage(m.getRole(), m.getContent()))
+                            .toList();
+                })
                 .orElse(List.of());
     }
 

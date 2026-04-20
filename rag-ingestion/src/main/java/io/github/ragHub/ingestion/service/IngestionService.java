@@ -33,20 +33,26 @@ public class IngestionService implements DocumentIngestionPort {
     }
 
     @Override
+    @org.springframework.transaction.annotation.Transactional
     public void ingest(KnowledgeDocument doc) {
+        jdbc.update("DELETE FROM vector_store WHERE metadata->>'documentId' = ?", doc.id());
         List<Document> chunks = splitter.apply(List.of(toSpringDoc(doc)));
         vectorStore.add(chunks);
     }
 
     @Override
     public void ingestBatch(Flux<KnowledgeDocument> documents) {
-        documents.collectList()
-                .map(docs -> docs.stream().map(this::toSpringDoc).toList())
-                .map(splitter::apply)
-                .subscribe(vectorStore::add, error -> { throw new io.github.ragHub.core.exception.RagException("Batch ingest failed", error); });
+        try {
+            List<Document> chunks = documents.collectList().block()
+                    .stream().map(this::toSpringDoc).toList();
+            vectorStore.add(splitter.apply(chunks));
+        } catch (Exception e) {
+            throw new io.github.ragHub.core.exception.RagException("Batch ingest failed", e);
+        }
     }
 
     @Override
+    @org.springframework.transaction.annotation.Transactional
     public void delete(String documentId) {
         jdbc.update("DELETE FROM vector_store WHERE metadata->>'documentId' = ?", documentId);
     }
